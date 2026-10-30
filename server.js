@@ -1,83 +1,52 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
-require('dotenv').config();
+const mongoose = require('mongoose');
 
 const app = express();
-app.use(express.json());
 app.use(cors());
+app.use(express.json());
 
-// ==========================================
-// आपकी मास्टर जेनेसिस आईडी (Root Node)
-// ==========================================
-const GENESIS_ROOT_ID = process.env.GENESIS_ROOT_ID || "GENESIS_MASTER";
+// MongoDB कनेक्शन
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://pncindi:YOUR_PASSWORD@cluster0.mongodb.net/proof-of-mind?retryWrites=true&w=majority";
 
-// MongoDB डेटाबेस कनेक्शन
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB से कनेक्ट हो गया!"))
-  .catch(err => console.error("डेटाबेस कनेक्शन एरर:", err));
+mongoose.connect(MONGO_URI)
+  .then(() => console.log("MongoDB कनेक्ट हो गया"))
+  .catch(err => console.error("MongoDB एरर:", err));
 
-// ==========================================
-// यूज़र डेटाबेस स्कीमा
-// ==========================================
+// यूज़र स्कीमा
 const UserSchema = new mongoose.Schema({
-  userId: { type: String, required: true, unique: true }, // Telegram ID या Pi UID
-  platform: { type: String, enum: ['TELEGRAM', 'PI'], required: true },
-  username: { type: String, default: '' },
-  
-  // जेनेसिस और रेफरल ट्री
-  isGenesis: { type: Boolean, default: false },
-  referredBy: { type: String, default: GENESIS_ROOT_ID },
-  directReferralsCount: { type: Number, default: 0 },
-  
-  // माइनिंग और पॉइंट्स
+  userId: { type: String, required: true, unique: true },
+  platform: { type: String, default: 'TELEGRAM' },
+  username: String,
   balance: { type: Number, default: 0 },
-  speedMultiplier: { type: Number, default: 1.0 },
+  isVerified: { type: Boolean, default: false },
   livesLeft: { type: Number, default: 5 },
-  
+  speedMultiplier: { type: Number, default: 1.0 },
   createdAt: { type: Date, default: Date.now }
 });
 
 const User = mongoose.model('User', UserSchema);
 
-// ==========================================
-// API 1: यूज़र लॉगिन / ऑटो-रेजिस्ट्रेशन
-// ==========================================
+// ग्लोबल चैलेंज और सीक्रेट आंसर (एडमिन द्वारा बदला जा सकता है)
+let currentChallenge = {
+  date: new Date().toISOString().slice(0, 10),
+  targetWords: ["Knowledge", "Power", "Decentralized", "Human", "Mind", "Creates", "Freedom", "Network"],
+  correctSentence: "Decentralized Mind Creates Freedom",
+  rewardAmount: 25.0,
+  bonusMultiplierForVerified: 2.5
+};
+
+// मास्टर एडमिन पासवर्ड (यह सिर्फ आपको पता है)
+const MASTER_ADMIN_KEY = "POM_LEADER_CHIEF_2026";
+
+// 1. यूज़र ऑथेंटिकेशन / रजिस्ट्रेशन
 app.post('/api/auth', async (req, res) => {
   try {
-    const { userId, platform, username, referralCode } = req.body;
-
-    if (!userId || !platform) {
-      return res.status(400).json({ error: "userId और platform अनिवार्य हैं" });
-    }
-
+    const { userId, platform, username } = req.body;
     let user = await User.findOne({ userId });
 
-    // अगर नया यूज़र है
     if (!user) {
-      let finalSponsor = GENESIS_ROOT_ID;
-
-      // अगर किसी के लिंक से आया है तो स्पॉन्सर ढूंढो
-      if (referralCode && referralCode !== userId) {
-        const sponsorExists = await User.findOne({ userId: referralCode });
-        if (sponsorExists) {
-          finalSponsor = referralCode;
-          await User.updateOne({ userId: referralCode }, { $inc: { directReferralsCount: 1 } });
-        }
-      }
-
-      // अगर खुद मास्टर आईडी रजिस्टर हो रही है
-      const isMaster = (userId === GENESIS_ROOT_ID);
-
-      user = new User({
-        userId,
-        platform,
-        username: username || '',
-        isGenesis: isMaster,
-        referredBy: isMaster ? null : finalSponsor,
-        balance: isMaster ? 1000 : 50 // मास्टर को इनिशियल ग्रांट
-      });
-
+      user = new User({ userId, platform, username });
       await user.save();
     }
 
@@ -87,39 +56,89 @@ app.post('/api/auth', async (req, res) => {
   }
 });
 
-// ==========================================
-// API 2: सीक्रेट ग्रामर / शब्द-युद्ध वैलिडेटर
-// ==========================================
+// 2. आज के शब्द प्राप्त करना
+app.get('/api/daily-words', (req, res) => {
+  res.json({
+    success: true,
+    words: currentChallenge.targetWords
+  });
+});
+
+// 3. वाक्य वेरीफाई और टोकन माइनिंग इंजन
 app.post('/api/verify-sentence', async (req, res) => {
   try {
-    const { userId, sentence, targetWords } = req.body;
+    const { userId, sentence } = req.body;
     const user = await User.findOne({ userId });
 
-    if (!user) return res.status(404).json({ error: "यूज़र नहीं मिला" });
-    if (user.livesLeft <= 0) {
-      return res.status(400).json({ error: "चांस खत्म हो चुके हैं! ऐड देखकर रीचार्ज करें।" });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "यूज़र नहीं मिला" });
     }
 
-    const cleanWords = sentence.trim().split(/\s+/);
-    
-    // बेसिक वैलिडेशन: कम से कम दिए गए शब्दों में से 3 होने चाहिए
-    const matchedWords = targetWords.filter(w => sentence.toLowerCase().includes(w.toLowerCase()));
-    const isValid = (matchedWords.length >= 3 && cleanWords.length >= 4);
+    const cleanSubmitted = sentence.trim().toLowerCase();
+    const cleanTarget = currentChallenge.correctSentence.trim().toLowerCase();
 
-    if (isValid) {
-      const rewardPoints = cleanWords.length * 10;
-      user.balance += rewardPoints;
-      user.speedMultiplier = 2.0; // स्पीड डबल
+    // सीक्रेट आंसर से मिलान
+    if (cleanSubmitted === cleanTarget) {
+      const multiplier = user.isVerified ? currentChallenge.bonusMultiplierForVerified : 1.0;
+      const earned = currentChallenge.rewardAmount * multiplier;
+
+      user.balance += earned;
+      user.livesLeft = 5; // सही उत्तर पर एनर्जी रीचार्ज
       await user.save();
-      return res.json({ success: true, message: "शानदार वाक्य!", earned: rewardPoints, newBalance: user.balance });
+
+      return res.json({
+        success: true,
+        message: "माइंड नोड सिंक हो गया! सही वाक्य!",
+        earned: earned,
+        newBalance: user.balance
+      });
     } else {
-      user.livesLeft -= 1;
+      user.livesLeft = Math.max(0, user.livesLeft - 1);
       await user.save();
-      return res.json({ success: false, message: "गलत वाक्य! चांस कटे।", livesLeft: user.livesLeft });
+
+      return res.json({
+        success: false,
+        message: "गलत वाक्य! दोबारा प्रयास करें।",
+        livesLeft: user.livesLeft
+      });
     }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// 4. एडमिन कंट्रोल: नया गुप्त उत्तर और शब्द सेट करना
+app.post('/api/admin/set-challenge', (req, res) => {
+  const { adminKey, targetWords, correctSentence, rewardAmount } = req.body;
+
+  if (adminKey !== MASTER_ADMIN_KEY) {
+    return res.status(403).json({ success: false, message: "गलत पासवर्ड! एक्सेस अस्वीकृत।" });
+  }
+
+  if (targetWords && Array.isArray(targetWords)) currentChallenge.targetWords = targetWords;
+  if (correctSentence) currentChallenge.correctSentence = correctSentence;
+  if (rewardAmount) currentChallenge.rewardAmount = rewardAmount;
+
+  res.json({
+    success: true,
+    message: "नया चैलेंज और गुप्त उत्तर सफलतापूर्वक सेव हो गया!",
+    data: currentChallenge
+  });
+});
+
+// 5. एडमिन कंट्रोल: गुप्त उत्तर देखना
+app.post('/api/admin/view-secret', (req, res) => {
+  const { adminKey } = req.body;
+
+  if (adminKey !== MASTER_ADMIN_KEY) {
+    return res.status(403).json({ success: false, message: "गलत पासवर्ड!" });
+  }
+
+  res.json({
+    success: true,
+    secretSentence: currentChallenge.correctSentence,
+    targetWords: currentChallenge.targetWords
+  });
 });
 
 // सर्वर स्टार्ट
