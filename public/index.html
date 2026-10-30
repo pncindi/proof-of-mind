@@ -1,263 +1,196 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Proof of Mind (PoM)</title>
-  
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PoM Master Control Panel</title>
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <style>
-    body.theme-tg {
-      background: radial-gradient(circle at top, #0f172a, #020617);
-      color: #f8fafc;
-    }
-    .theme-tg .brand-card {
-      background: rgba(30, 41, 59, 0.7);
-      border-color: rgba(51, 65, 85, 0.8);
-    }
-    .theme-tg .accent-text { color: #38bdf8; }
-    .theme-tg .action-btn { background: #0284c7; color: white; }
-
-    body.theme-pi {
-      background: radial-gradient(circle at top, #2e1065, #0f051d);
-      color: #faf5ff;
-    }
-    .theme-pi .brand-card {
-      background: rgba(88, 28, 135, 0.4);
-      border-color: rgba(147, 51, 234, 0.4);
-    }
-    .theme-pi .accent-text { color: #facc15; }
-    .theme-pi .action-btn { background: #eab308; color: #1e1b4b; }
-
-    .word-chip { transition: all 0.2s ease; }
-    .word-chip.selected { opacity: 0.3; transform: scale(0.9); pointer-events: none; }
-  </style>
 </head>
-<body class="theme-tg min-h-screen flex flex-col justify-between p-5 select-none font-sans">
+<body class="bg-slate-950 text-slate-100 p-4 min-h-screen font-sans">
 
-  <div class="w-full flex justify-between items-center brand-card border p-3 rounded-2xl backdrop-blur-md">
-    <div>
-      <div class="flex items-center gap-1.5">
-        <span id="platformBadge" class="text-[10px] tracking-wider uppercase px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300">Detecting...</span>
-        <span id="verifiedBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-medium">Free Tier</span>
-      </div>
-      <h2 id="userName" class="font-bold text-sm mt-1 accent-text">Pioneer Node</h2>
-    </div>
-    <div class="text-right">
-      <p class="text-[10px] text-slate-400">PoM Balance</p>
-      <span id="userBalance" class="text-lg font-black tracking-tight accent-text">0.00</span>
-    </div>
-  </div>
-
-  <div class="my-auto flex flex-col items-center w-full">
-    <div class="flex items-center space-x-2 mb-3">
-      <span class="text-xs text-slate-400">Energy Lives:</span>
-      <span id="livesDisplay" class="text-sm font-bold text-red-400">❤️❤️❤️❤️❤️</span>
-    </div>
-
-    <div class="w-full min-h-[70px] brand-card border border-dashed rounded-2xl p-4 flex flex-wrap items-center justify-center gap-2 mb-5">
-      <span id="sentencePlaceholder" class="text-xs text-slate-500 italic">नीचे दिए शब्दों पर टैप करके वाक्य बनाएं...</span>
-      <div id="constructedSentence" class="flex flex-wrap gap-2"></div>
-    </div>
-
-    <div id="wordsContainer" class="flex flex-wrap justify-center gap-2 max-w-sm mb-6"></div>
-
-    <div class="flex gap-3 w-full max-w-xs">
-      <button onclick="resetCurrentSentence()" class="w-1/3 py-3 rounded-xl border border-slate-600 text-xs font-bold active:scale-95 transition">
-        Reset
-      </button>
-      <button onclick="submitSentence()" class="w-2/3 py-3 rounded-xl action-btn font-bold text-sm shadow-lg active:scale-95 transition">
-        Verify & Mine ⚡
-      </button>
-    </div>
-  </div>
-
-  <div class="w-full flex flex-col gap-2">
-    <div id="verificationBanner" class="w-full brand-card border p-3 rounded-xl flex justify-between items-center backdrop-blur-md">
+  <div class="max-w-2xl mx-auto space-y-6">
+    
+    <!-- Top Header -->
+    <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex justify-between items-center shadow-lg">
       <div>
-        <p class="font-bold text-xs">🛡️ Get Human Verified</p>
-        <p class="text-[10px] text-slate-400">0.05 TON गैस फ़ीस दें और 2.5x स्पीड + विथड्रॉल अनलॉक करें</p>
+        <h1 class="text-lg font-black text-sky-400">🧠 PoM सुप्रीम एडमिन कंसोल</h1>
+        <p class="text-xs text-slate-400">लीडर सीक्रेट्स, एंटी-चीट व नेटवर्क मॉडरेशन</p>
       </div>
-      <button onclick="verifyAccountOnChain()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs active:scale-95 transition">
-        Verify
+      <button onclick="toggleSystemPause()" id="pauseBtn" class="px-3 py-1.5 rounded-xl bg-amber-600/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition">
+        इमरजेंसी पॉज़
       </button>
     </div>
 
-    <div class="w-full brand-card border p-3 rounded-xl flex justify-between items-center backdrop-blur-md">
-      <div class="text-left">
-        <p class="font-bold text-xs">Daily Energy Boost</p>
-        <p class="text-[10px] text-slate-400">ऐड देखकर फ़्री एनर्जी रीचार्ज करें</p>
-      </div>
-      <button onclick="watchBoostAd()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs active:scale-95 transition">
-        Watch Ad 🚀
-      </button>
+    <!-- Password Key -->
+    <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+      <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">मास्टर पासवर्ड (Admin Key)</label>
+      <input type="password" id="adminKey" value="POM_LEADER_CHIEF_2026" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white outline-none focus:border-sky-500" />
     </div>
+
+    <!-- SECTION 1: LEADER ALPHA & WORDS -->
+    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
+      <h2 class="text-sm font-bold text-amber-300 flex items-center gap-2">
+        <span>🔑</span> डेली सीक्रेट चैलेंज (लीडर्स के लिए उत्तर)
+      </h2>
+
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">गेम में दिखने वाले शब्द (कॉमा से अलग करें)</label>
+        <textarea id="wordPoolInput" rows="2" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white outline-none">Knowledge, Power, Decentralized, Human, Mind, Creates, Freedom, Network</textarea>
+      </div>
+
+      <div class="bg-sky-950/40 border border-sky-500/30 p-3 rounded-xl">
+        <label class="block text-xs font-bold text-amber-300 mb-1">100% सही उत्तर (Secret Match)</label>
+        <input type="text" id="targetAnswerInput" value="Decentralized Mind Creates Freedom" class="w-full bg-slate-800 border border-amber-500/50 rounded-lg p-2 text-xs font-bold text-amber-300 outline-none" />
+      </div>
+
+      <button onclick="updateChallengeOnServer()" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2.5 rounded-xl text-xs transition active:scale-95 shadow-md">
+        लाइव गेम में सेव करें 🚀
+      </button>
+
+      <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+        <p class="text-[11px] text-slate-400 mb-1 font-semibold">लीडर्स को भेजने के लिए रेडीमेड क्लू:</p>
+        <div id="clueMessage" class="text-xs text-slate-300 select-all font-mono break-words mb-2"></div>
+        <button onclick="copyClue()" class="w-full py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-bold text-white transition">
+          लीडर मैसेज कॉपी करें 📋
+        </button>
+      </div>
+    </div>
+
+    <!-- SECTION 2: ANTI-CHEAT & USER MODERATION -->
+    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
+      <h2 class="text-sm font-bold text-red-400 flex items-center gap-2">
+        <span>🛡️</span> एंटी-चीट व यूजर मॉडरेशन (Freeze / Ban / Slash)
+      </h2>
+
+      <div class="flex gap-2">
+        <input type="text" id="targetUserId" placeholder="यूज़र का Telegram ID दर्ज करें..." class="flex-1 bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white outline-none focus:border-red-500" />
+        <button onclick="fetchUserDetails()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-bold">
+          जाँचें 🔍
+        </button>
+      </div>
+
+      <!-- User Info Card -->
+      <div id="userInfoBox" class="hidden bg-slate-800/60 border border-slate-700 p-3.5 rounded-xl space-y-2 text-xs">
+        <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+          <span class="font-bold text-white" id="uName">--</span>
+          <span id="uStatus" class="px-2 py-0.5 rounded text-[10px] font-bold">Active</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-slate-400">
+          <p>करंट बैलेंस: <b class="text-white" id="uBalance">0</b> PoM</p>
+          <p>0.1 TON वेरिफाइड: <b class="text-white" id="uVerified">No</b></p>
+        </div>
+
+        <!-- Action Controls -->
+        <div class="pt-3 border-t border-slate-700 flex flex-wrap gap-2">
+          <button onclick="applyUserAction('FREEZE')" class="px-3 py-1.5 bg-amber-600/30 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold">नोड फ़्रीज़ करें ❄️</button>
+          <button onclick="applyUserAction('UNFREEZE')" class="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-xs font-bold">अन-फ़्रीज़ ☀️</button>
+          <button onclick="applyUserAction('BAN')" class="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold">परमानेंट बैन 🚫</button>
+          <button onclick="applyUserAction('UNBAN')" class="px-3 py-1.5 bg-slate-700 text-slate-300 rounded-lg text-xs font-bold">अन-बैन</button>
+          <button onclick="slashBalancePrompt()" class="px-3 py-1.5 bg-rose-950 text-rose-300 border border-rose-500/40 rounded-lg text-xs font-bold">टोकन काटें (Slash) ✂️</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script>
     const BACKEND_URL = "https://proof-of-mind-api.onrender.com";
 
-    let currentUser = null;
-    let selectedWords = [];
-    const targetWordsPool = ["Knowledge", "Power", "Decentralized", "Human", "Mind", "Creates", "Freedom", "Network"];
+    function updateClueBox() {
+      const ans = document.getElementById("targetAnswerInput").value;
+      const text = `🔥 SPECIAL VIP HINT 🔥\n\nProof of Mind का आज का 100% सही उत्तर:\n👉 "${ans}"\n\nइसे ऐप में अरेंज करके तुरंत PoM टोकन माइन कर लो और स्क्रीनशॉट ग्रुप में शेयर करके अपनी टीम को इनवाइट करो! 🚀\nhttps://t.me/proofofmind_bot`;
+      document.getElementById("clueMessage").innerText = text;
+    }
+    document.getElementById("targetAnswerInput").addEventListener("input", updateClueBox);
+    updateClueBox();
 
-    const isPi = navigator.userAgent.includes("PiBrowser") || window.Pi !== undefined;
-    const body = document.body;
-    const platformBadge = document.getElementById("platformBadge");
-
-    if (isPi) {
-      body.classList.replace("theme-tg", "theme-pi");
-      platformBadge.innerText = "Pi Network Node";
-      initPiAuth();
-    } else {
-      platformBadge.innerText = "Telegram Mini App";
-      initTelegramAuth();
+    function copyClue() {
+      const text = document.getElementById("clueMessage").innerText;
+      navigator.clipboard.writeText(text);
+      alert("मैसेज कॉपी हो गया!");
     }
 
-    function initTelegramAuth() {
-      const tg = window.Telegram?.WebApp;
-      if (tg) {
-        tg.expand();
-        const user = tg.initDataUnsafe?.user || { id: "TG_DEMO_USER", first_name: "Pioneer" };
-        document.getElementById("userName").innerText = user.first_name;
-        registerNode(user.id, 'TELEGRAM', user.username || user.first_name);
-      }
-    }
+    async function updateChallengeOnServer() {
+      const key = document.getElementById("adminKey").value;
+      const words = document.getElementById("wordPoolInput").value.split(",").map(w => w.trim());
+      const sentence = document.getElementById("targetAnswerInput").value.trim();
 
-    function initPiAuth() {
-      if (window.Pi) {
-        Pi.init({ version: "2.0", sandbox: true });
-        Pi.authenticate(['username'], onIncompletePaymentFound)
-          .then(auth => {
-            document.getElementById("userName").innerText = auth.user.username;
-            registerNode(auth.user.uid, 'PI', auth.user.username);
-          }).catch(err => console.log("Pi Login Error:", err));
-      }
-    }
-
-    function onIncompletePaymentFound(payment) {}
-
-    async function registerNode(userId, platform, username) {
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/auth`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, platform, username })
-        });
-        const data = await res.json();
-        if (data.success) {
-          currentUser = data.user;
-          document.getElementById("userBalance").innerText = currentUser.balance.toFixed(2);
-          if (currentUser.isVerified) {
-            markAsVerifiedUI();
-          }
-        }
-      } catch (err) {
-        console.error("Backend Auth Error:", err);
-      }
-    }
-
-    function markAsVerifiedUI() {
-      const badge = document.getElementById("verifiedBadge");
-      badge.innerText = "Verified Human Node ✔";
-      badge.className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-semibold";
-      const banner = document.getElementById("verificationBanner");
-      if (banner) banner.style.display = "none";
-    }
-
-    function renderWordPool() {
-      const container = document.getElementById("wordsContainer");
-      container.innerHTML = "";
-      targetWordsPool.forEach((word, index) => {
-        const btn = document.createElement("button");
-        btn.className = "word-chip brand-card border px-3 py-1.5 rounded-xl text-xs font-medium active:scale-95";
-        btn.id = `chip-${index}`;
-        btn.innerText = word;
-        btn.onclick = () => selectWord(word, index);
-        container.appendChild(btn);
+      const res = await fetch(`${BACKEND_URL}/api/admin/set-challenge`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminKey: key, targetWords: words, correctSentence: sentence })
       });
+      const data = await res.json();
+      alert(data.message || (data.success ? "सेव हो गया!" : "एरर"));
     }
 
-    function selectWord(word, index) {
-      document.getElementById("sentencePlaceholder").style.display = "none";
-      selectedWords.push(word);
-      document.getElementById(`chip-${index}`).classList.add("selected");
-      
-      const chip = document.createElement("span");
-      chip.className = "px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 text-xs font-semibold";
-      chip.innerText = word;
-      document.getElementById("constructedSentence").appendChild(chip);
-    }
+    async function fetchUserDetails() {
+      const key = document.getElementById("adminKey").value;
+      const uid = document.getElementById("targetUserId").value.trim();
+      if (!uid) return alert("ID दर्ज करें");
 
-    function resetCurrentSentence() {
-      selectedWords = [];
-      document.getElementById("constructedSentence").innerHTML = "";
-      document.getElementById("sentencePlaceholder").style.display = "block";
-      document.querySelectorAll(".word-chip").forEach(el => el.classList.remove("selected"));
-    }
-
-    async function submitSentence() {
-      if (selectedWords.length < 3) {
-        alert("कम से कम 3 शब्द चुनें!");
-        return;
-      }
-
-      const fullSentence = selectedWords.join(" ");
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/verify-sentence`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: currentUser ? currentUser.userId : "TG_DEMO_USER",
-            sentence: fullSentence,
-            targetWords: targetWordsPool
-          })
-        });
-        const data = await res.json();
-
-        if (data.success) {
-          alert(`🎉 ${data.message} (+${data.earned} टोकन)`);
-          document.getElementById("userBalance").innerText = data.newBalance.toFixed(2);
-          resetCurrentSentence();
+      const res = await fetch(`${BACKEND_URL}/api/admin/user-details`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminKey: key, targetUserId: uid })
+      });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById("userInfoBox").classList.remove("hidden");
+        document.getElementById("uName").innerText = `${data.user.username || 'User'} (${data.user.userId})`;
+        document.getElementById("uBalance").innerText = data.user.balance.toFixed(2);
+        document.getElementById("uVerified").innerText = data.user.isVerified ? "हाँ ✔" : "नहीं ❌";
+        
+        const status = document.getElementById("uStatus");
+        if (data.user.isBanned) {
+          status.innerText = "BANNED";
+          status.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-300 border border-red-500/40";
+        } else if (data.user.isFrozen) {
+          status.innerText = "FROZEN";
+          status.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40";
         } else {
-          alert(`❌ ${data.message}`);
-          updateLives(data.livesLeft);
-          resetCurrentSentence();
+          status.innerText = "ACTIVE";
+          status.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40";
         }
-      } catch (err) {
-        alert("सर्वर से संपर्क नहीं हो पाया");
-      }
-    }
-
-    function updateLives(count) {
-      const hearts = "❤️".repeat(Math.max(0, count)) + "🖤".repeat(Math.max(0, 5 - count));
-      document.getElementById("livesDisplay").innerText = hearts;
-    }
-
-    function verifyAccountOnChain() {
-      alert("TON Connect वॉलेट विंडो खुल रही है... 0.05 TON सेंड करके अपना नोड वेरिफ़ाई करें।");
-    }
-
-    function watchBoostAd() {
-      const AdController = window.Adsgram?.init({ blockId: "YOUR_ADSGRAM_BLOCK_ID" });
-      if (AdController) {
-        AdController.show().then(() => {
-          alert("बधाई! 5 एनर्जी रीचार्ज हो गए।");
-          updateLives(5);
-        }).catch(() => {
-          alert("ऐड पूरा नहीं देखा गया!");
-        });
       } else {
-        alert("डेमो मोड: एनर्जी रीचार्ज कर दी गई है।");
-        updateLives(5);
+        alert(data.message);
       }
     }
 
-    renderWordPool();
+    async function applyUserAction(action, value = 0, reason = "") {
+      const key = document.getElementById("adminKey").value;
+      const uid = document.getElementById("targetUserId").value.trim();
+
+      const res = await fetch(`${BACKEND_URL}/api/admin/user-action`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminKey: key, targetUserId: uid, action, value, reason })
+      });
+      const data = await res.json();
+      alert(data.message);
+      fetchUserDetails();
+    }
+
+    function slashBalancePrompt() {
+      const val = prompt("नया बैलेंस कितना करना चाहते हैं? (0 दर्ज करने पर सारे टोकन कट जाएंगे):", "0");
+      if (val !== null) {
+        applyUserAction("SLASH_BALANCE", Number(val));
+      }
+    }
+
+    async function toggleSystemPause() {
+      const key = document.getElementById("adminKey").value;
+      const res = await fetch(`${BACKEND_URL}/api/admin/toggle-pause`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminKey: key })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        document.getElementById("pauseBtn").innerText = data.isPaused ? "सिस्टम चालू करें" : "इमरजेंसी पॉज़";
+      }
+    }
   </script>
 </body>
 </html>
