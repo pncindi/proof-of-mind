@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Proof of Mind (PoM)</title>
+  
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body.theme-tg {
+      background: radial-gradient(circle at top, #0f172a, #020617);
+      color: #f8fafc;
+    }
+    .theme-tg .brand-card {
+      background: rgba(30, 41, 59, 0.7);
+      border-color: rgba(51, 65, 85, 0.8);
+    }
+    .theme-tg .accent-text { color: #38bdf8; }
+    .theme-tg .action-btn { background: #0284c7; color: white; }
+
+    body.theme-pi {
+      background: radial-gradient(circle at top, #2e1065, #0f051d);
+      color: #faf5ff;
+    }
+    .theme-pi .brand-card {
+      background: rgba(88, 28, 135, 0.4);
+      border-color: rgba(147, 51, 234, 0.4);
+    }
+    .theme-pi .accent-text { color: #facc15; }
+    .theme-pi .action-btn { background: #eab308; color: #1e1b4b; }
+
+    .word-chip { transition: all 0.2s ease; }
+    .word-chip.selected { opacity: 0.3; transform: scale(0.9); pointer-events: none; }
+  </style>
+</head>
+<body class="theme-tg min-h-screen flex flex-col justify-between p-5 select-none font-sans">
+
+  <div class="w-full flex justify-between items-center brand-card border p-3 rounded-2xl backdrop-blur-md">
+    <div>
+      <div class="flex items-center gap-1.5">
+        <span id="platformBadge" class="text-[10px] tracking-wider uppercase px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300">Detecting...</span>
+        <span id="verifiedBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-medium">Free Tier</span>
+      </div>
+      <h2 id="userName" class="font-bold text-sm mt-1 accent-text">Pioneer Node</h2>
+    </div>
+    <div class="text-right">
+      <p class="text-[10px] text-slate-400">PoM Balance</p>
+      <span id="userBalance" class="text-lg font-black tracking-tight accent-text">0.00</span>
+    </div>
+  </div>
+
+  <div class="my-auto flex flex-col items-center w-full">
+    <div class="flex items-center space-x-2 mb-3">
+      <span class="text-xs text-slate-400">Energy Lives:</span>
+      <span id="livesDisplay" class="text-sm font-bold text-red-400">❤️❤️❤️❤️❤️</span>
+    </div>
+
+    <div class="w-full min-h-[70px] brand-card border border-dashed rounded-2xl p-4 flex flex-wrap items-center justify-center gap-2 mb-5">
+      <span id="sentencePlaceholder" class="text-xs text-slate-500 italic">नीचे दिए शब्दों पर टैप करके वाक्य बनाएं...</span>
+      <div id="constructedSentence" class="flex flex-wrap gap-2"></div>
+    </div>
+
+    <div id="wordsContainer" class="flex flex-wrap justify-center gap-2 max-w-sm mb-6"></div>
+
+    <div class="flex gap-3 w-full max-w-xs">
+      <button onclick="resetCurrentSentence()" class="w-1/3 py-3 rounded-xl border border-slate-600 text-xs font-bold active:scale-95 transition">
+        Reset
+      </button>
+      <button onclick="submitSentence()" class="w-2/3 py-3 rounded-xl action-btn font-bold text-sm shadow-lg active:scale-95 transition">
+        Verify & Mine ⚡
+      </button>
+    </div>
+  </div>
+
+  <div class="w-full flex flex-col gap-2">
+    <div id="verificationBanner" class="w-full brand-card border p-3 rounded-xl flex justify-between items-center backdrop-blur-md">
+      <div>
+        <p class="font-bold text-xs">🛡️ Get Human Verified</p>
+        <p class="text-[10px] text-slate-400">0.05 TON गैस फ़ीस दें और 2.5x स्पीड + विथड्रॉल अनलॉक करें</p>
+      </div>
+      <button onclick="verifyAccountOnChain()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs active:scale-95 transition">
+        Verify
+      </button>
+    </div>
+
+    <div class="w-full brand-card border p-3 rounded-xl flex justify-between items-center backdrop-blur-md">
+      <div class="text-left">
+        <p class="font-bold text-xs">Daily Energy Boost</p>
+        <p class="text-[10px] text-slate-400">ऐड देखकर फ़्री एनर्जी रीचार्ज करें</p>
+      </div>
+      <button onclick="watchBoostAd()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs active:scale-95 transition">
+        Watch Ad 🚀
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const BACKEND_URL = "https://proof-of-mind-api.onrender.com";
+
+    let currentUser = null;
+    let selectedWords = [];
+    const targetWordsPool = ["Knowledge", "Power", "Decentralized", "Human", "Mind", "Creates", "Freedom", "Network"];
+
+    const isPi = navigator.userAgent.includes("PiBrowser") || window.Pi !== undefined;
+    const body = document.body;
+    const platformBadge = document.getElementById("platformBadge");
+
+    if (isPi) {
+      body.classList.replace("theme-tg", "theme-pi");
+      platformBadge.innerText = "Pi Network Node";
+      initPiAuth();
+    } else {
+      platformBadge.innerText = "Telegram Mini App";
+      initTelegramAuth();
+    }
+
+    function initTelegramAuth() {
+      const tg = window.Telegram?.WebApp;
+      if (tg) {
+        tg.expand();
+        const user = tg.initDataUnsafe?.user || { id: "TG_DEMO_USER", first_name: "Pioneer" };
+        document.getElementById("userName").innerText = user.first_name;
+        registerNode(user.id, 'TELEGRAM', user.username || user.first_name);
+      }
+    }
+
+    function initPiAuth() {
+      if (window.Pi) {
+        Pi.init({ version: "2.0", sandbox: true });
+        Pi.authenticate(['username'], onIncompletePaymentFound)
+          .then(auth => {
+            document.getElementById("userName").innerText = auth.user.username;
+            registerNode(auth.user.uid, 'PI', auth.user.username);
+          }).catch(err => console.log("Pi Login Error:", err));
+      }
+    }
+
+    function onIncompletePaymentFound(payment) {}
+
+    async function registerNode(userId, platform, username) {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/auth`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, platform, username })
+        });
+        const data = await res.json();
+        if (data.success) {
+          currentUser = data.user;
+          document.getElementById("userBalance").innerText = currentUser.balance.toFixed(2);
+          if (currentUser.isVerified) {
+            markAsVerifiedUI();
+          }
+        }
+      } catch (err) {
+        console.error("Backend Auth Error:", err);
+      }
+    }
+
+    function markAsVerifiedUI() {
+      const badge = document.getElementById("verifiedBadge");
+      badge.innerText = "Verified Human Node ✔";
+      badge.className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-semibold";
+      const banner = document.getElementById("verificationBanner");
+      if (banner) banner.style.display = "none";
+    }
+
+    function renderWordPool() {
+      const container = document.getElementById("wordsContainer");
+      container.innerHTML = "";
+      targetWordsPool.forEach((word, index) => {
+        const btn = document.createElement("button");
+        btn.className = "word-chip brand-card border px-3 py-1.5 rounded-xl text-xs font-medium active:scale-95";
+        btn.id = `chip-${index}`;
+        btn.innerText = word;
+        btn.onclick = () => selectWord(word, index);
+        container.appendChild(btn);
+      });
+    }
+
+    function selectWord(word, index) {
+      document.getElementById("sentencePlaceholder").style.display = "none";
+      selectedWords.push(word);
+      document.getElementById(`chip-${index}`).classList.add("selected");
+      
+      const chip = document.createElement("span");
+      chip.className = "px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 text-xs font-semibold";
+      chip.innerText = word;
+      document.getElementById("constructedSentence").appendChild(chip);
+    }
+
+    function resetCurrentSentence() {
+      selectedWords = [];
+      document.getElementById("constructedSentence").innerHTML = "";
+      document.getElementById("sentencePlaceholder").style.display = "block";
+      document.querySelectorAll(".word-chip").forEach(el => el.classList.remove("selected"));
+    }
+
+    async function submitSentence() {
+      if (selectedWords.length < 3) {
+        alert("कम से कम 3 शब्द चुनें!");
+        return;
+      }
+
+      const fullSentence = selectedWords.join(" ");
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/verify-sentence`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: currentUser ? currentUser.userId : "TG_DEMO_USER",
+            sentence: fullSentence,
+            targetWords: targetWordsPool
+          })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          alert(`🎉 ${data.message} (+${data.earned} टोकन)`);
+          document.getElementById("userBalance").innerText = data.newBalance.toFixed(2);
+          resetCurrentSentence();
+        } else {
+          alert(`❌ ${data.message}`);
+          updateLives(data.livesLeft);
+          resetCurrentSentence();
+        }
+      } catch (err) {
+        alert("सर्वर से संपर्क नहीं हो पाया");
+      }
+    }
+
+    function updateLives(count) {
+      const hearts = "❤️".repeat(Math.max(0, count)) + "🖤".repeat(Math.max(0, 5 - count));
+      document.getElementById("livesDisplay").innerText = hearts;
+    }
+
+    function verifyAccountOnChain() {
+      alert("TON Connect वॉलेट विंडो खुल रही है... 0.05 TON सेंड करके अपना नोड वेरिफ़ाई करें।");
+    }
+
+    function watchBoostAd() {
+      const AdController = window.Adsgram?.init({ blockId: "YOUR_ADSGRAM_BLOCK_ID" });
+      if (AdController) {
+        AdController.show().then(() => {
+          alert("बधाई! 5 एनर्जी रीचार्ज हो गए।");
+          updateLives(5);
+        }).catch(() => {
+          alert("ऐड पूरा नहीं देखा गया!");
+        });
+      } else {
+        alert("डेमो मोड: एनर्जी रीचार्ज कर दी गई है।");
+        updateLives(5);
+      }
+    }
+
+    renderWordPool();
+  </script>
+</body>
+</html>
