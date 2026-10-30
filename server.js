@@ -6,17 +6,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MongoDB कनेक्शन
 const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://pncindi:YOUR_PASSWORD@cluster0.mongodb.net/proof-of-mind?retryWrites=true&w=majority";
 
 mongoose.connect(MONGO_URI)
   .then(() => console.log("MongoDB कनेक्ट हो गया"))
   .catch(err => console.error("MongoDB एरर:", err));
 
-// मास्टर TON रिसीवर एड्रेस
 const MASTER_TON_ADDRESS = "UQD5ZiNy8-eV7l6Ny46c-f98USLg-JXPTRRIPMV-0YiadqJV";
 
-// यूज़र स्कीमा
+// यूज़र स्कीमा: रेफरल आर्किटेक्चर के साथ
 const UserSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true },
   platform: { type: String, default: 'TELEGRAM' },
@@ -28,6 +26,11 @@ const UserSchema = new mongoose.Schema({
   piWalletAddress: { type: String, default: "" },
   livesLeft: { type: Number, default: 5 },
   speedMultiplier: { type: Number, default: 1.0 },
+  referredBy: { type: String, default: null }, // Level 1 Leader
+  level2Upline: { type: String, default: null }, // Level 2 Leader
+  referralCountL1: { type: Number, default: 0 },
+  referralCountL2: { type: Number, default: 0 },
+  refRewardsEarned: { type: Number, default: 0 },
   isFrozen: { type: Boolean, default: false },
   isBanned: { type: Boolean, default: false },
   banReason: { type: String, default: "" },
@@ -36,7 +39,6 @@ const UserSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', UserSchema);
 
-// ग्लोबल गेम सेटिंग्स
 let currentChallenge = {
   date: new Date().toISOString().slice(0, 10),
   targetWords: ["Knowledge", "Power", "Decentralized", "Human", "Mind", "Creates", "Freedom", "Network"],
@@ -48,14 +50,44 @@ let currentChallenge = {
 
 const MASTER_ADMIN_KEY = "POM_LEADER_CHIEF_2026";
 
-// 1. यूज़र ऑथेंटिकेशन / रजिस्ट्रेशन
+// 1. यूज़र ऑथेंटिकेशन और रेफरल बाइंडिंग इंजन
 app.post('/api/auth', async (req, res) => {
   try {
-    const { userId, platform, username, language } = req.body;
+    const { userId, platform, username, language, refCode } = req.body;
     let user = await User.findOne({ userId });
 
     if (!user) {
-      user = new User({ userId, platform, username, language: language || 'en' });
+      let l1Leader = null;
+      let l2Leader = null;
+
+      // अगर यूज़र रेफरल लिंक से आया है
+      if (refCode && refCode !== userId) {
+        const directUpline = await User.findOne({ userId: refCode });
+        if (directUpline) {
+          l1Leader = directUpline.userId;
+          directUpline.referralCountL1 += 1;
+          await directUpline.save();
+
+          // Level 2 अपलाइन सेट करना
+          if (directUpline.referredBy) {
+            const secondUpline = await User.findOne({ userId: directUpline.referredBy });
+            if (secondUpline) {
+              l2Leader = secondUpline.userId;
+              secondUpline.referralCountL2 += 1;
+              await secondUpline.save();
+            }
+          }
+        }
+      }
+
+      user = new User({
+        userId,
+        platform,
+        username,
+        language: language || 'en',
+        referredBy: l1Leader,
+        level2Upline: l2Leader
+      });
       await user.save();
     }
 
@@ -69,15 +101,7 @@ app.post('/api/auth', async (req, res) => {
   }
 });
 
-// 2. आज के शब्द प्राप्त करना
-app.get('/api/daily-words', (req, res) => {
-  if (currentChallenge.isSystemPaused) {
-    return res.status(503).json({ success: false, message: "System under maintenance" });
-  }
-  res.json({ success: true, words: currentChallenge.targetWords });
-});
-
-// 3. वाक्य वेरीफाई और टोकन माइनिंग इंजन
+// 2. माइनिंग और मल्टी-लेवल रेफरल कमीशन (L1: 10%, L2: 4%)
 app.post('/api/verify-sentence', async (req, res) => {
   try {
     if (currentChallenge.isSystemPaused) {
@@ -88,8 +112,7 @@ app.post('/api/verify-sentence', async (req, res) => {
     const user = await User.findOne({ userId });
 
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
-    if (user.isBanned) return res.status(403).json({ success: false, message: "Banned account" });
-    if (user.isFrozen) return res.status(403).json({ success: false, message: "Account is frozen" });
+    if (user.isBanned || user.isFrozen) return res.status(403).json({ success: false, message: "Account Restricted" });
 
     const cleanSubmitted = sentence.trim().toLowerCase();
     const cleanTarget = currentChallenge.correctSentence.trim().toLowerCase();
@@ -101,6 +124,28 @@ app.post('/api/verify-sentence', async (req, res) => {
       user.balance += earned;
       user.livesLeft = 5;
       await user.save();
+
+      // Level 1 रेफरल बोनस (10%)
+      if (user.referredBy) {
+        const l1 = await User.findOne({ userId: user.referredBy });
+        if (l1) {
+          const l1Bonus = earned * 0.10;
+          l1.balance += l1Bonus;
+          l1.refRewardsEarned += l1Bonus;
+          await l1.save();
+        }
+      }
+
+      // Level 2 रेफरल बोनस (4%)
+      if (user.level2Upline) {
+        const l2 = await User.findOne({ userId: user.level2Upline });
+        if (l2) {
+          const l2Bonus = earned * 0.04;
+          l2.balance += l2Bonus;
+          l2.refRewardsEarned += l2Bonus;
+          await l2.save();
+        }
+      }
 
       return res.json({
         success: true,
@@ -123,96 +168,57 @@ app.post('/api/verify-sentence', async (req, res) => {
   }
 });
 
-// 4. TON और Pi वॉलेट एड्रेस बाइंडिंग API
+// 3. वॉलेट बाइंडिंग API
 app.post('/api/bind-wallet', async (req, res) => {
   try {
     const { userId, tonAddress, piAddress } = req.body;
     const user = await User.findOne({ userId });
-
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
     if (tonAddress) user.tonWalletAddress = tonAddress;
     if (piAddress) user.piWalletAddress = piAddress;
 
     await user.save();
-    res.json({ success: true, message: "Wallet bound successfully", user });
+    res.json({ success: true, message: "Wallet bound", user });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// 5. 0.1 TON ऑन-चेन पेमेंट कन्फर्मेशन
+// 4. 0.1 TON पेमेंट कन्फर्मेशन और नोड अपग्रेड
 app.post('/api/confirm-ton-payment', async (req, res) => {
   try {
-    const { userId, tonAddress, boc } = req.body;
+    const { userId, tonAddress } = req.body;
     const user = await User.findOne({ userId });
-
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-    // नोड वेरिफाई और 2.5x स्पीड अपग्रेड
     user.isVerified = true;
     user.speedMultiplier = 2.5;
     if (tonAddress) user.tonWalletAddress = tonAddress;
     await user.save();
 
+    res.json({ success: true, isVerified: true, user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 5. रेफरल स्टेटिस्टिक्स API
+app.get('/api/referrals/:userId', async (req, res) => {
+  try {
+    const user = await User.findOne({ userId: req.params.userId });
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
     res.json({
       success: true,
-      message: "0.1 TON Verified! Human Node Activated (2.5x Mining Boost)",
-      isVerified: true
+      l1Count: user.referralCountL1 || 0,
+      l2Count: user.referralCountL2 || 0,
+      totalEarned: (user.refRewardsEarned || 0).toFixed(2)
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// ================= ADMIN CONTROLS =================
-app.post('/api/admin/set-challenge', (req, res) => {
-  const { adminKey, targetWords, correctSentence, rewardAmount } = req.body;
-  if (adminKey !== MASTER_ADMIN_KEY) return res.status(403).json({ success: false, message: "Unauthorized" });
-
-  if (targetWords && Array.isArray(targetWords)) currentChallenge.targetWords = targetWords;
-  if (correctSentence) currentChallenge.correctSentence = correctSentence;
-  if (rewardAmount) currentChallenge.rewardAmount = rewardAmount;
-
-  res.json({ success: true, message: "Challenge updated", data: currentChallenge });
-});
-
-app.post('/api/admin/user-details', async (req, res) => {
-  const { adminKey, targetUserId } = req.body;
-  if (adminKey !== MASTER_ADMIN_KEY) return res.status(403).json({ success: false, message: "Unauthorized" });
-
-  const user = await User.findOne({ userId: targetUserId });
-  if (!user) return res.status(404).json({ success: false, message: "User not found" });
-
-  res.json({ success: true, user });
-});
-
-app.post('/api/admin/user-action', async (req, res) => {
-  const { adminKey, targetUserId, action, value, reason } = req.body;
-  if (adminKey !== MASTER_ADMIN_KEY) return res.status(403).json({ success: false, message: "Unauthorized" });
-
-  const user = await User.findOne({ userId: targetUserId });
-  if (!user) return res.status(404).json({ success: false, message: "User not found" });
-
-  if (action === "FREEZE") user.isFrozen = true;
-  else if (action === "UNFREEZE") user.isFrozen = false;
-  else if (action === "BAN") { user.isBanned = true; user.banReason = reason || "Violation"; }
-  else if (action === "UNBAN") { user.isBanned = false; user.banReason = ""; }
-  else if (action === "SLASH_BALANCE") user.balance = Math.max(0, value !== undefined ? Number(value) : 0);
-
-  await user.save();
-  res.json({ success: true, message: `Action ${action} executed`, user });
-});
-
-app.post('/api/admin/toggle-pause', (req, res) => {
-  const { adminKey } = req.body;
-  if (adminKey !== MASTER_ADMIN_KEY) return res.status(403).json({ success: false, message: "Unauthorized" });
-
-  currentChallenge.isSystemPaused = !currentChallenge.isSystemPaused;
-  res.json({ success: true, isPaused: currentChallenge.isSystemPaused });
-});
-
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`PoM Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`PoM Server on port ${PORT}`));
