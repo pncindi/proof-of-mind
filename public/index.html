@@ -8,6 +8,7 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
   <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
@@ -25,31 +26,39 @@
       color: #38bdf8;
       border-top: 2px solid #38bdf8;
     }
-    .word-chip {
-      transition: all 0.2s ease;
+    .puzzle-chip {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .word-chip.selected {
+    .puzzle-chip.selected {
       opacity: 0.25;
-      transform: scale(0.92);
+      transform: scale(0.9);
       pointer-events: none;
     }
   </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between select-none pb-20">
 
-  <!-- Header Section with Language Switcher -->
+  <!-- Header Section with 9 Languages Switcher -->
   <div class="p-4 space-y-2">
     <div class="flex justify-between items-center px-1">
-      <span class="text-[10px] font-mono text-slate-400">NODE v2.6 // PROOF OF MIND</span>
-      <!-- 🌐 Language Selector -->
+      <div class="flex items-center gap-1.5">
+        <span class="text-[10px] font-mono text-slate-400">NODE v2.6</span>
+        <span id="levelBadge" class="text-[10px] px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30">Level 1</span>
+      </div>
+
+      <!-- 🌐 9 Regional Languages Selector -->
       <div class="flex items-center gap-1.5 bg-slate-800/80 border border-slate-700 px-2 py-1 rounded-lg">
         <span class="text-xs">🌐</span>
         <select id="langSelect" onchange="changeLanguage(this.value)" class="bg-transparent text-[11px] text-sky-400 font-bold outline-none cursor-pointer">
           <option value="en" class="bg-slate-900 text-white">English</option>
-          <option value="hi" class="bg-slate-900 text-white">हिन्दी</option>
-          <option value="vi" class="bg-slate-900 text-white">Tiếng Việt</option>
-          <option value="ru" class="bg-slate-900 text-white">Русский</option>
-          <option value="zh" class="bg-slate-900 text-white">中文</option>
+          <option value="hi" class="bg-slate-900 text-white">हिन्दी (India)</option>
+          <option value="vi" class="bg-slate-900 text-white">Tiếng Việt (Vietnam)</option>
+          <option value="id" class="bg-slate-900 text-white">Indonesia</option>
+          <option value="zh" class="bg-slate-900 text-white">中文 (China/HK/TW)</option>
+          <option value="bn" class="bg-slate-900 text-white">বাংলা (Bangladesh)</option>
+          <option value="ar" class="bg-slate-900 text-white">العربية (Gulf/Arab)</option>
+          <option value="ru" class="bg-slate-900 text-white">Русский (Russia)</option>
+          <option value="es" class="bg-slate-900 text-white">Español (Global)</option>
         </select>
       </div>
     </div>
@@ -76,30 +85,40 @@
     </div>
   </div>
 
-  <!-- TAB 1: MINE / PLAY -->
+  <!-- TAB 1: MINE / PUZZLE ENGINE -->
   <div id="tab-mine" class="tab-content px-4 flex flex-col items-center flex-1 justify-center">
+    
+    <!-- Mode Indicator Badge -->
+    <div id="gameModeBanner" class="mb-2 hidden">
+      <span class="text-[10px] px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold uppercase tracking-wider">
+        🏆 Daily Mind Loop Mode (Levels 100+ Master)
+      </span>
+    </div>
+
     <div class="flex items-center space-x-2 mb-3">
       <span data-i18n="energyLives" class="text-xs text-slate-400">Energy Lives:</span>
       <span id="livesDisplay" class="text-sm font-bold text-red-400">❤️❤️❤️❤️❤️</span>
     </div>
 
-    <div class="w-full min-h-[80px] brand-card border border-dashed border-slate-700 rounded-2xl p-4 flex flex-wrap items-center justify-center gap-2 mb-4">
-      <span id="sentencePlaceholder" data-i18n="placeholder" class="text-xs text-slate-500 italic">नीचे दिए शब्दों पर टैप करके वाक्य बनाएं...</span>
-      <div id="constructedSentence" class="flex flex-wrap gap-2"></div>
+    <!-- Answer Workspace -->
+    <div class="w-full min-h-[70px] brand-card border border-dashed border-slate-700 rounded-2xl p-3 flex flex-wrap items-center justify-center gap-2 mb-4">
+      <span id="itemPlaceholder" data-i18n="placeholder" class="text-xs text-slate-500 italic">टैप करके उत्तर बनाएं...</span>
+      <div id="constructedItems" class="flex flex-wrap gap-1.5"></div>
     </div>
 
-    <div id="wordsContainer" class="flex flex-wrap justify-center gap-2 max-w-sm mb-5"></div>
+    <!-- Chips Container (Letters for Level 1-100, Words for Daily Loop) -->
+    <div id="chipsContainer" class="flex flex-wrap justify-center gap-2 max-w-sm mb-5"></div>
 
     <div class="flex gap-3 w-full max-w-xs mb-4">
-      <button onclick="resetCurrentSentence()" data-i18n="btnReset" class="w-1/3 py-3 rounded-xl brand-card border border-slate-700 text-xs font-bold active:scale-95 transition">
+      <button onclick="resetCurrentWorkspace()" data-i18n="btnReset" class="w-1/3 py-3 rounded-xl brand-card border border-slate-700 text-xs font-bold active:scale-95 transition">
         Reset
       </button>
-      <button onclick="submitSentence()" data-i18n="btnMine" class="w-2/3 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold text-sm shadow-lg active:scale-95 transition">
+      <button onclick="submitWorkspace()" data-i18n="btnMine" class="w-2/3 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold text-sm shadow-lg active:scale-95 transition">
         Verify & Mine ⚡
       </button>
     </div>
 
-    <button onclick="alert('⚡ Energy Boosted!')" data-i18n="btnBoost" class="w-full max-w-xs py-2 rounded-xl brand-card border border-indigo-500/30 text-indigo-300 text-xs font-semibold flex items-center justify-center gap-2">
+    <button onclick="watchRewardAd()" data-i18n="btnBoost" class="w-full max-w-xs py-2 rounded-xl brand-card border border-indigo-500/30 text-indigo-300 text-xs font-semibold flex items-center justify-center gap-2">
       🚀 Free Energy Boost (Watch Ad)
     </button>
   </div>
@@ -120,7 +139,7 @@
           <p class="font-bold text-xs">Official YouTube Tutorial</p>
           <p class="text-[10px] text-amber-400">+100.00 PoM</p>
         </div>
-        <button onclick="alert('वीडियो जल्द आ रहा है!')" data-i18n="btnStart" class="px-3 py-1.5 rounded-lg bg-slate-700 text-xs font-bold">Watch</button>
+        <button onclick="alert('Tutorial Video Coming Soon!')" data-i18n="btnStart" class="px-3 py-1.5 rounded-lg bg-slate-700 text-xs font-bold">Watch</button>
       </div>
     </div>
   </div>
@@ -132,7 +151,6 @@
       <p data-i18n="frensDesc" class="text-[11px] text-slate-400 mt-1">अपने नेटवर्क को बड़ा करें और 2-लेवल कम्युनिटी कमीशन पाएं!</p>
     </div>
 
-    <!-- 2-Tier Reward Architecture Cards -->
     <div class="grid grid-cols-2 gap-2.5 mb-3">
       <div class="brand-card p-3 rounded-2xl border border-sky-500/30 text-center">
         <span class="text-[10px] font-bold text-sky-400 uppercase tracking-wider">Level 1 (Direct)</span>
@@ -141,19 +159,18 @@
       </div>
 
       <div class="brand-card p-3 rounded-2xl border border-indigo-500/30 text-center">
-        <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Level 2 (Indirect)</span>
+        <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Level 2 (Team)</span>
         <div class="text-2xl font-black text-white mt-1" id="l2FrensCount">0</div>
         <p class="text-[10px] text-indigo-300 font-semibold mt-0.5">4% Team Share</p>
       </div>
     </div>
 
-    <!-- Total Referral Earnings -->
     <div class="brand-card p-3 rounded-xl mb-3 flex justify-between items-center">
       <span class="text-xs text-slate-300 font-medium">Total Affiliate Rewards</span>
       <span id="refRewardsEarned" class="text-sm font-black text-emerald-400">+0.00 PoM</span>
     </div>
 
-    <!-- Referral Link Box -->
+    <!-- Referral Link Box with startapp parameter -->
     <div class="brand-card p-2.5 rounded-xl mb-3 flex items-center justify-between">
       <input id="refLinkInput" type="text" readonly value="https://t.me/proofofmind_bot" class="bg-transparent text-[11px] text-slate-300 w-3/4 outline-none truncate" />
       <button onclick="copyRefLink()" data-i18n="btnCopy" class="px-3 py-1.5 rounded-lg bg-sky-600 text-xs font-bold">Copy</button>
@@ -182,12 +199,11 @@
       <div class="space-y-2">
         <div id="ton-connect-btn" class="flex justify-center"></div>
 
-        <!-- Verification Action Button -->
         <button id="payTonBtn" onclick="payTonVerification()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-90 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5">
           <span>🛡️</span> <span data-i18n="btnVerifyTon">Verify Human Pioneer (0.1 TON)</span>
         </button>
 
-        <!-- Verified Success Box (Auto-Shows upon verification) -->
+        <!-- Auto-Hidden until Verified -->
         <div id="verifiedSuccessBox" class="hidden p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center">
           <p class="text-xs font-bold text-emerald-400">✔ Pioneer Node Verified On-Chain</p>
           <p class="text-[10px] text-slate-400 mt-0.5">2.5x Mining Multiplier Active</p>
@@ -243,15 +259,15 @@
     const RECEIVER_TON_WALLET = "UQD5ZiNy8-eV7l6Ny46c-f98USLg-JXPTRRIPMV-0YiadqJV";
 
     let currentUser = null;
-    let selectedWords = [];
+    let selectedItems = [];
+    let currentMode = "LEVEL_GAME";
     let currentLang = 'en';
-    const targetWordsPool = ["Knowledge", "Power", "Decentralized", "Human", "Mind", "Creates", "Freedom", "Network"];
 
     const translations = {
       en: {
         pomBalance: "PoM Balance",
         energyLives: "Energy Lives:",
-        placeholder: "Tap words below to construct sentence...",
+        placeholder: "Tap below to form answer...",
         btnReset: "Reset",
         btnMine: "Verify & Mine ⚡",
         btnBoost: "🚀 Free Energy Boost (Watch Ad)",
@@ -273,7 +289,7 @@
       hi: {
         pomBalance: "PoM बैलेंस",
         energyLives: "एनर्जी लाइफ:",
-        placeholder: "नीचे दिए शब्दों पर टैप करके वाक्य बनाएं...",
+        placeholder: "नीचे टैप करके उत्तर बनाएं...",
         btnReset: "रीसेट",
         btnMine: "वेरिफाई और माइन ⚡",
         btnBoost: "🚀 फ्री एनर्जी बूस्ट (विज्ञापन देखें)",
@@ -295,17 +311,17 @@
       vi: {
         pomBalance: "Số dư PoM",
         energyLives: "Năng lượng:",
-        placeholder: "Chạm vào các từ bên dưới để ghép câu...",
+        placeholder: "Chạm bên dưới để ghép câu trả lời...",
         btnReset: "Đặt lại",
         btnMine: "Xác minh & Đào ⚡",
         btnBoost: "🚀 Nạp năng lượng miễn phí (Xem quảng cáo)",
         tasksTitle: "Nhiệm vụ cộng đồng",
         btnStart: "Bắt đầu",
         frensTitle: "Mời bạn bè & Kiếm tiền",
-        frensDesc: "Mở rộng mạng lưới và nhận hoa hồng khai thác 2 cấp độ!",
+        frensDesc: "Mở rộng mạng lưới và nhận hoa hồng 2 cấp độ!",
         btnCopy: "Sao chép",
         btnInvite: "Mời bạn bè 🚀",
-        tonVerifyDesc: "Thanh toán 0.1 TON để xác minh Pioneer thật và mở khóa tốc độ đào 2.5x.",
+        tonVerifyDesc: "Thanh toán 0.1 TON để xác minh Pioneer thật và mở khóa 2.5x tốc độ đào.",
         btnVerifyTon: "Xác minh Pioneer (0.1 TON)",
         piBindDesc: "Liên kết ví Pi Network để nhận airdrop mainnet trong tương lai.",
         btnSave: "Lưu",
@@ -314,10 +330,98 @@
         navFrens: "Bạn bè",
         navWallet: "Ví"
       },
+      id: {
+        pomBalance: "Saldo PoM",
+        energyLives: "Energi:",
+        placeholder: "Ketuk di bawah untuk menyusun jawaban...",
+        btnReset: "Reset",
+        btnMine: "Verifikasi & Tambang ⚡",
+        btnBoost: "🚀 Tambah Energi (Tonton Iklan)",
+        tasksTitle: "Tugas Komunitas",
+        btnStart: "Mulai",
+        frensTitle: "Undang Teman & Cuan",
+        frensDesc: "Perluas jaringan dan dapatkan komisi mining 2 tingkat!",
+        btnCopy: "Salin",
+        btnInvite: "Undang Teman 🚀",
+        tonVerifyDesc: "Bayar 0.1 TON untuk verifikasi node manusia dan buka kecepatan 2.5x.",
+        btnVerifyTon: "Verifikasi Pioneer (0.1 TON)",
+        piBindDesc: "Tautkan Dompet Pi Network untuk alokasi komunitas di mainnet.",
+        btnSave: "Simpan",
+        navMine: "Tambang",
+        navTasks: "Tugas",
+        navFrens: "Teman",
+        navWallet: "Dompet"
+      },
+      zh: {
+        pomBalance: "PoM 余额",
+        energyLives: "能量生命:",
+        placeholder: "点击下方按钮组合出正确答案...",
+        btnReset: "重置",
+        btnMine: "验证并挖矿 ⚡",
+        btnBoost: "🚀 免费能量恢复 (看广告)",
+        tasksTitle: "社区赏金任务",
+        btnStart: "去完成",
+        frensTitle: "邀请好友赚取收益",
+        frensDesc: "拓展您的节点网络，享受两级社区挖矿分成收益！",
+        btnCopy: "复制",
+        btnInvite: "立即邀请 🚀",
+        tonVerifyDesc: "支付 0.1 TON 燃料费完成真人节点验证，解锁 2.5 倍挖矿加速与提现权限。",
+        btnVerifyTon: "真人节点验证 (0.1 TON)",
+        piBindDesc: "绑定 Pi Network 钱包地址以接收未来主网社区分配额度。",
+        btnSave: "绑定保存",
+        navMine: "挖矿",
+        navTasks: "任务",
+        navFrens: "好友",
+        navWallet: "钱包"
+      },
+      bn: {
+        pomBalance: "PoM ব্যালেন্স",
+        energyLives: "এনার্জি লাইভস:",
+        placeholder: "উত্তর তৈরি করতে নিচে স্পর্শ করুন...",
+        btnReset: "রিসেট",
+        btnMine: "ভেরিফাই ও মাইন ⚡",
+        btnBoost: "🚀 এনার্জি বুস্ট (বিজ্ঞাপন দেখুন)",
+        tasksTitle: "কমিউনিটি টাস্ক",
+        btnStart: "শুরু করুন",
+        frensTitle: "বন্ধুদের আমন্ত্রণ জানান",
+        frensDesc: "আপনার নেটওয়ার্ক বাড়ান এবং ২-স্তরের মাইনিং কমিশন পান!",
+        btnCopy: "কপি",
+        btnInvite: "বন্ধু আমন্ত্রণ করুন 🚀",
+        tonVerifyDesc: "০.১ TON গ্যাস ফি দিয়ে হিউম্যান নোড ভেরিফাই করুন এবং ২.৫x স্পিড আনলক করুন।",
+        btnVerifyTon: "হিউম্যান নোড ভেরিফাই (0.1 TON)",
+        piBindDesc: "ভবিষ্যত পাই নেটওয়ার্ক মেইননেট এয়ারড্রপের জন্য পাই ওয়ালেট লিঙ্ক করুন।",
+        btnSave: "সংরক্ষণ",
+        navMine: "মাইন",
+        navTasks: "টাস্ক",
+        navFrens: "বন্ধু",
+        navWallet: "ওয়ালেট"
+      },
+      ar: {
+        pomBalance: "رصيد PoM",
+        energyLives: "الطاقة المتبقية:",
+        placeholder: "اضغط أدناه لتكوين الإجابة...",
+        btnReset: "إعادة تعيين",
+        btnMine: "تحقق وتعدين ⚡",
+        btnBoost: "🚀 شحن الطاقة (مشاهدة إعلان)",
+        tasksTitle: "مهام المجتمع",
+        btnStart: "ابدأ",
+        frensTitle: "دعوة الأصدقاء والربح",
+        frensDesc: "قم بتوسيع شبكتك واكسب عمولات تعدين مجتمعية من مستويين!",
+        btnCopy: "نسخ",
+        btnInvite: "دعوة صديق 🚀",
+        tonVerifyDesc: "ادفع 0.1 TON لتوثيق العقدة البشرية وفتح سرعة تعدين 2.5x وسحب الأرباح.",
+        btnVerifyTon: "توثيق العقدة (0.1 TON)",
+        piBindDesc: "اربط محفظة Pi Network الخاصة بك لتوزيعات الشبكة الرئيسية المستقبلية.",
+        btnSave: "حفظ",
+        navMine: "تعدين",
+        navTasks: "مهام",
+        navFrens: "أصدقاء",
+        navWallet: "محفظة"
+      },
       ru: {
         pomBalance: "Баланс PoM",
         energyLives: "Энергия:",
-        placeholder: "Нажимайте на слова ниже, чтобы составить фразу...",
+        placeholder: "Нажимайте ниже, чтобы составить ответ...",
         btnReset: "Сброс",
         btnMine: "Проверить и Майнить ⚡",
         btnBoost: "🚀 Буст энергии (Смотреть рекламу)",
@@ -336,27 +440,27 @@
         navFrens: "Друзья",
         navWallet: "Кошелек"
       },
-      zh: {
-        pomBalance: "PoM 余额",
-        energyLives: "能量生命:",
-        placeholder: "点击下方词组构建完整逻辑句子...",
-        btnReset: "重置",
-        btnMine: "验证并挖矿 ⚡",
-        btnBoost: "🚀 免费能量恢复 (看广告)",
-        tasksTitle: "社区赏金任务",
-        btnStart: "去完成",
-        frensTitle: "邀请好友赚取收益",
-        frensDesc: "拓展您的节点网络，享受两级社区挖矿分成收益！",
-        btnCopy: "复制",
-        btnInvite: "立即邀请 🚀",
-        tonVerifyDesc: "支付 0.1 TON 燃料费完成真人节点验证，解锁 2.5 倍挖矿加速与提现权限。",
-        btnVerifyTon: "真人节点验证 (0.1 TON)",
-        piBindDesc: "绑定 Pi Network 钱包地址以接收未来主网社区分配额度。",
-        btnSave: "绑定保存",
-        navMine: "挖矿",
-        navTasks: "任务",
-        navFrens: "好友",
-        navWallet: "钱包"
+      es: {
+        pomBalance: "Saldo PoM",
+        energyLives: "Vidas de Energía:",
+        placeholder: "Toca abajo para formar la respuesta...",
+        btnReset: "Reiniciar",
+        btnMine: "Verificar y Minar ⚡",
+        btnBoost: "🚀 Impulso de Energía (Ver Anuncio)",
+        tasksTitle: "Tareas de la Comunidad",
+        btnStart: "Comenzar",
+        frensTitle: "Invita Amigos y Gana",
+        frensDesc: "¡Expande tu red y gana comisiones de minería de 2 niveles!",
+        btnCopy: "Copiar",
+        btnInvite: "Invitar a un Amigo 🚀",
+        tonVerifyDesc: "Paga 0.1 TON para verificar el nodo humano y desbloquear 2.5x de velocidad.",
+        btnVerifyTon: "Verificar Pionero (0.1 TON)",
+        piBindDesc: "Vincula tu billetera Pi Network para la asignación en la red principal.",
+        btnSave: "Guardar",
+        navMine: "Minar",
+        navTasks: "Tareas",
+        navFrens: "Amigos",
+        navWallet: "Billetera"
       }
     };
 
@@ -367,6 +471,7 @@
         const key = el.getAttribute('data-i18n');
         if (dict[key]) el.innerText = dict[key];
       });
+      loadGameWorkspace();
     }
 
     function switchTab(tabName) {
@@ -394,20 +499,21 @@
       const user = tg.initDataUnsafe?.user || { id: "TG_PIONEER_NODE", first_name: "Pioneer" };
       document.getElementById("userName").innerText = user.first_name;
       
-      // टेलीग्राम स्टार्ट पैरामीटर से रेफरल कोड पकड़ना
       const startParam = tg.initDataUnsafe?.start_param;
       if (startParam && startParam.startsWith('ref_')) {
         uplineRefCode = startParam.replace('ref_', '');
       }
 
-      document.getElementById("refLinkInput").value = `https://t.me/proofofmind_bot?start=ref_${user.id}`;
+      // महत्वपूर्ण: स्टार्टएप (startapp) पैरामीटर
+      document.getElementById("refLinkInput").value = `https://t.me/proofofmind_bot?startapp=ref_${user.id}`;
       
       const userLang = (tg.initDataUnsafe?.user?.language_code || 'en').slice(0, 2);
       if (translations[userLang]) {
         document.getElementById("langSelect").value = userLang;
+        currentLang = userLang;
         changeLanguage(userLang);
       }
-      registerNode(user.id, 'TELEGRAM', user.username || user.first_name, userLang, uplineRefCode);
+      registerNode(user.id, 'TELEGRAM', user.username || user.first_name, currentLang, uplineRefCode);
     }
 
     async function registerNode(userId, platform, username, language, refCode) {
@@ -421,15 +527,111 @@
         if (data.success) {
           currentUser = data.user;
           document.getElementById("userBalance").innerText = currentUser.balance.toFixed(2);
+          
           if (currentUser.isVerified) {
             markVerifiedUI();
           }
           if (currentUser.piWalletAddress) {
             document.getElementById("piAddressInput").value = currentUser.piWalletAddress;
           }
+          loadGameWorkspace();
         }
       } catch (err) {
         console.error(err);
+      }
+    }
+
+    async function loadGameWorkspace() {
+      if (!currentUser) return;
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/get-game-data?userId=${currentUser.userId}&lang=${currentLang}`);
+        const data = await res.json();
+        if (data.success) {
+          currentMode = data.mode;
+          if (data.mode === "DAILY_LOOP") {
+            document.getElementById("levelBadge").innerText = "Loop Master 🏆";
+            document.getElementById("gameModeBanner").classList.remove("hidden");
+            renderChips(data.words, "WORD");
+          } else {
+            document.getElementById("levelBadge").innerText = `Level ${data.level}`;
+            document.getElementById("gameModeBanner").classList.add("hidden");
+            renderChips(data.pool, "LETTER");
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function renderChips(items, type) {
+      const container = document.getElementById("chipsContainer");
+      container.innerHTML = "";
+      resetCurrentWorkspace();
+
+      items.forEach((item, index) => {
+        const btn = document.createElement("button");
+        if (type === "LETTER") {
+          btn.className = "puzzle-chip w-11 h-11 rounded-2xl brand-card border border-slate-700 text-base font-black text-sky-300 flex items-center justify-center shadow-md active:scale-90 transition";
+        } else {
+          btn.className = "puzzle-chip brand-card px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-200 border border-slate-700 active:scale-95 transition";
+        }
+        btn.id = `chip-${index}`;
+        btn.innerText = item;
+        btn.onclick = () => selectChip(item, index, type);
+        container.appendChild(btn);
+      });
+    }
+
+    function selectChip(item, index, type) {
+      document.getElementById("itemPlaceholder").style.display = "none";
+      selectedItems.push(item);
+      document.getElementById(`chip-${index}`).classList.add("selected");
+      
+      const chip = document.createElement("span");
+      if (type === "LETTER") {
+        chip.className = "w-9 h-9 rounded-xl bg-sky-500/20 text-sky-300 border border-sky-500/40 text-sm font-extrabold flex items-center justify-center";
+      } else {
+        chip.className = "px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 text-xs font-semibold";
+      }
+      chip.innerText = item;
+      document.getElementById("constructedItems").appendChild(chip);
+    }
+
+    function resetCurrentWorkspace() {
+      selectedItems = [];
+      document.getElementById("constructedItems").innerHTML = "";
+      document.getElementById("itemPlaceholder").style.display = "block";
+      document.querySelectorAll(".puzzle-chip").forEach(el => el.classList.remove("selected"));
+    }
+
+    async function submitWorkspace() {
+      if (selectedItems.length < 1) {
+        alert(translations[currentLang].placeholder);
+        return;
+      }
+      const answer = currentMode === "DAILY_LOOP" ? selectedItems.join(" ") : selectedItems.join("");
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/verify-game`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: currentUser ? currentUser.userId : "TG_PIONEER_NODE",
+            answer: answer,
+            lang: currentLang,
+            mode: currentMode
+          })
+        });
+        const data = await res.json();
+        alert(data.message + (data.earned ? ` (+${data.earned} PoM)` : ''));
+        if (data.success) {
+          currentUser.balance = data.newBalance;
+          currentUser.level = data.newLevel;
+          document.getElementById("userBalance").innerText = data.newBalance.toFixed(2);
+          loadGameWorkspace();
+        }
+      } catch (err) {
+        alert("Server connection failed");
       }
     }
 
@@ -449,74 +651,13 @@
     }
 
     function markVerifiedUI() {
-      // 1. ऊपर हेडर का बैज हरा करें
       const badge = document.getElementById("verifiedBadge");
       badge.innerText = "Verified 2.5x ✔";
       badge.className = "text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40";
       
-      // 2. PoM लोगो पर ग्रीन टिक मार्क दिखाएँ
       document.getElementById("logoVerifiedCheck").classList.remove("hidden");
-
-      // 3. 0.1 TON वाला पेमेंट बटन हाइड करें और वेरिफाइड कार्ड दिखाएँ
       document.getElementById("payTonBtn").classList.add("hidden");
       document.getElementById("verifiedSuccessBox").classList.remove("hidden");
-    }
-
-    function renderWordPool() {
-      const container = document.getElementById("wordsContainer");
-      container.innerHTML = "";
-      targetWordsPool.forEach((word, index) => {
-        const btn = document.createElement("button");
-        btn.className = "word-chip brand-card px-3 py-1.5 rounded-xl text-xs font-medium active:scale-95";
-        btn.id = `chip-${index}`;
-        btn.innerText = word;
-        btn.onclick = () => selectWord(word, index);
-        container.appendChild(btn);
-      });
-    }
-
-    function selectWord(word, index) {
-      document.getElementById("sentencePlaceholder").style.display = "none";
-      selectedWords.push(word);
-      document.getElementById(`chip-${index}`).classList.add("selected");
-      
-      const chip = document.createElement("span");
-      chip.className = "px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 text-xs font-semibold";
-      chip.innerText = word;
-      document.getElementById("constructedSentence").appendChild(chip);
-    }
-
-    function resetCurrentSentence() {
-      selectedWords = [];
-      document.getElementById("constructedSentence").innerHTML = "";
-      document.getElementById("sentencePlaceholder").style.display = "block";
-      document.querySelectorAll(".word-chip").forEach(el => el.classList.remove("selected"));
-    }
-
-    async function submitSentence() {
-      if (selectedWords.length < 3) {
-        alert(translations[currentLang].placeholder);
-        return;
-      }
-      const fullSentence = selectedWords.join(" ");
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/verify-sentence`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: currentUser ? currentUser.userId : "TG_PIONEER_NODE",
-            sentence: fullSentence
-          })
-        });
-        const data = await res.json();
-        alert(data.message + (data.earned ? ` (+${data.earned} PoM)` : ''));
-        if (data.success) {
-          document.getElementById("userBalance").innerText = data.newBalance.toFixed(2);
-          resetCurrentSentence();
-        }
-      } catch (err) {
-        alert("Server connection failed");
-      }
     }
 
     function copyRefLink() {
@@ -530,6 +671,11 @@
       const link = document.getElementById("refLinkInput").value;
       const text = encodeURIComponent("Proof of Mind पर मेरे साथ जुड़ें और मुफ़्त PoM टोकन माइन करें! 🧠⚡");
       window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${text}`);
+    }
+
+    function watchRewardAd() {
+      alert("⚡ Free Life Refilled! Energy at 100%");
+      document.getElementById("livesDisplay").innerText = "❤️❤️❤️❤️❤️";
     }
 
     // TON CONNECT
@@ -566,7 +712,7 @@
 
     async function payTonVerification() {
       if (!tonConnectUI || !tonConnectUI.connected) {
-        alert("पहले ऊपर दिए गए बटन से अपना TON Wallet कनेक्ट करें!");
+        alert("पहले TON Wallet कनेक्ट करें!");
         return;
       }
 
@@ -627,8 +773,6 @@
         alert("Error saving Pi address");
       }
     }
-
-    renderWordPool();
   </script>
 </body>
 </html>
