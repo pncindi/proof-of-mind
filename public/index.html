@@ -39,7 +39,6 @@
 
   <!-- Header Section with Language Switcher -->
   <div class="p-4 space-y-2">
-    <!-- Top Lang & Status Bar -->
     <div class="flex justify-between items-center px-1">
       <span class="text-[10px] font-mono text-slate-400">NODE v2.6 // PROOF OF MIND</span>
       <!-- 🌐 Language Selector -->
@@ -377,7 +376,6 @@
       document.getElementById("userName").innerText = user.first_name;
       document.getElementById("refLinkInput").value = `https://t.me/proofofmind_bot?start=ref_${user.id}`;
       
-      // Auto-detect user language
       const userLang = (tg.initDataUnsafe?.user?.language_code || 'en').slice(0, 2);
       if (translations[userLang]) {
         document.getElementById("langSelect").value = userLang;
@@ -509,7 +507,6 @@
           boundBox.classList.remove("hidden");
           boundBox.querySelector("span").innerText = rawAddress.slice(0, 6) + "..." + rawAddress.slice(-6);
 
-          // Bind TON wallet in Backend
           await fetch(`${BACKEND_URL}/api/bind-wallet`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -530,14 +527,13 @@
         return;
       }
 
-      // 0.1 TON = 100,000,000 nanotons
+      // 0.1 TON = 100,000,000 nanotons (बिना किसी अमान्य payload के)
       const transaction = {
         validUntil: Math.floor(Date.now() / 1000) + 360,
         messages: [
           {
             address: RECEIVER_TON_WALLET,
-            amount: "100000000",
-            payload: "" // Telegram user ID proof
+            amount: "100000000"
           }
         ]
       };
@@ -545,7 +541,7 @@
       try {
         const result = await tonConnectUI.sendTransaction(transaction);
         if (result && result.boc) {
-          alert("🎉 0.1 TON Payment Successful! Verifying node...");
+          alert("🎉 0.1 TON पेमेंट सफल! नोड वेरिफाई किया जा रहा है...");
           const res = await fetch(`${BACKEND_URL}/api/confirm-ton-payment`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -558,7 +554,7 @@
           const data = await res.json();
           if (data.success) {
             markVerifiedUI();
-            alert("✅ Node Verified as Human Pioneer! 2.5x speed activated.");
+            alert("✅ नोड सफलतापूर्वक वेरिफाई हो गया! 2.5x माइनिंग स्पीड चालू हो गई है।");
           }
         }
       } catch (err) {
