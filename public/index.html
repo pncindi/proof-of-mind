@@ -39,7 +39,7 @@
   <div class="p-4 space-y-2">
     <div class="flex justify-between items-center px-1">
       <div class="flex items-center gap-1.5">
-        <span class="text-[10px] font-mono text-slate-400">NODE v2.9</span>
+        <span class="text-[10px] font-mono text-slate-400">NODE v3.0</span>
         <span id="levelBadge" class="text-[10px] px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30">Level 1</span>
       </div>
       <div class="flex items-center gap-1.5 bg-slate-800/80 border border-slate-700 px-2 py-1 rounded-lg">
@@ -79,7 +79,7 @@
     </div>
   </div>
 
-  <!-- TAB 1: MINE (Fixed Chips Display) -->
+  <!-- TAB 1: MINE -->
   <div id="tab-mine" class="tab-content px-4 flex flex-col items-center flex-1 justify-center">
     <div class="flex items-center space-x-2 mb-3">
       <span class="text-xs text-slate-400">Energy Lives:</span>
@@ -99,7 +99,7 @@
     </div>
   </div>
 
-  <!-- TAB 2: TASKS (Fixed Claim System) -->
+  <!-- TAB 2: TASKS -->
   <div id="tab-tasks" class="tab-content hidden px-4 flex-1 space-y-2.5">
     <h3 class="font-bold text-base mb-2 text-slate-200">Community Bounties</h3>
     
@@ -148,7 +148,7 @@
     </div>
   </div>
 
-  <!-- TAB 3: FRENS (Fixed Referral Count Display) -->
+  <!-- TAB 3: FRENS -->
   <div id="tab-frens" class="tab-content hidden px-4 flex-1">
     <div class="text-center my-2">
       <h3 class="font-black text-xl text-sky-400">Invite Frens & Earn</h3>
@@ -202,7 +202,9 @@
   </div>
 
   <script>
-    const BACKEND_URL = "https://proof-of-mind-one.vercel.app"; // अपना सही बैकएंड URL डालें
+    // FIX 1: Corrected API URL (Render Database)
+    const BACKEND_URL = "https://proof-of-mind-api.onrender.com"; 
+
     let currentUser = null;
     let selectedItems = [];
     let currentLang = 'en';
@@ -235,7 +237,8 @@
         uplineRefCode = startParam.replace('ref_', '');
       }
 
-      document.getElementById("refLinkInput").value = `https://t.me/proofofmind_bot?startapp=ref_${user.id}`;
+      // FIX 2: Corrected Bot Username (with underscores) for Referral
+      document.getElementById("refLinkInput").value = `https://t.me/proof_of_mind_bot?startapp=ref_${user.id}`;
       registerNode(user.id, user.username || user.first_name, uplineRefCode);
     } else {
       registerNode("TEST_USER_123", "TestUser", null);
@@ -257,7 +260,7 @@
           }
           loadGameWorkspace();
         }
-      } catch (err) { console.error(err); }
+      } catch (err) { console.error("API Auth Error:", err); }
     }
 
     async function loadGameWorkspace() {
@@ -269,13 +272,15 @@
           document.getElementById("levelBadge").innerText = `Level ${data.level}`;
           renderChips(data.pool);
         }
-      } catch (e) { console.error(e); }
+      } catch (e) { console.error("Game Load Error:", e); }
     }
 
     function renderChips(pool) {
       const container = document.getElementById("chipsContainer");
       container.innerHTML = "";
       resetCurrentWorkspace();
+
+      if(!pool) return;
 
       pool.forEach((letter, index) => {
         const btn = document.createElement("button");
@@ -319,13 +324,11 @@
           document.getElementById("userBalance").innerText = data.newBalance.toFixed(2);
           loadGameWorkspace();
         }
-      } catch (err) { alert("Server error"); }
+      } catch (err) { alert("Network Connection Error"); }
     }
 
-    // Task Flow Fix: Open link and show Claim button
     function openTaskLink(taskId, url) {
       window.open(url, '_blank');
-      // लिंक खोलने के बाद क्लेम बटन दिखाएं ताकि यूजर पॉइंट ले सके
       setTimeout(() => {
         const claimBtn = document.getElementById(`btn-claim-${taskId}`);
         if (claimBtn) claimBtn.classList.remove('hidden');
@@ -348,7 +351,7 @@
         } else {
           alert(data.message);
         }
-      } catch (e) { alert("Task reward failed"); }
+      } catch (e) { alert("Task reward failed. Check API connection."); }
     }
 
     function markTaskDoneUI(taskId) {
@@ -357,6 +360,7 @@
         claimBtn.innerText = "Completed ✔";
         claimBtn.disabled = true;
         claimBtn.className = "px-2.5 py-1.5 rounded-lg bg-slate-700 text-xs font-bold text-slate-400 cursor-default";
+        claimBtn.classList.remove('hidden');
       }
     }
 
@@ -380,6 +384,7 @@
 
     function shareOnTelegram() {
       const link = document.getElementById("refLinkInput").value;
+      // FIX 3: Sharing link updated with correct bot username
       window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent("Proof of Mind पर जुड़ें और PoM माइन करें! 🧠⚡")}`);
     }
   </script>
