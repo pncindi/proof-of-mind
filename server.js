@@ -14,7 +14,6 @@ mongoose.connect(MONGO_URI)
 
 const MASTER_TON_ADDRESS = "UQD5ZiNy8-eV7l6Ny46c-f98USLg-JXPTRRIPMV-0YiadqJV";
 
-// यूज़र स्कीमा (100 Levels + Daily Loop + Referrals)
 const UserSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true },
   platform: { type: String, default: 'TELEGRAM' },
@@ -33,15 +32,13 @@ const UserSchema = new mongoose.Schema({
   referralCountL1: { type: Number, default: 0 },
   referralCountL2: { type: Number, default: 0 },
   refRewardsEarned: { type: Number, default: 0 },
-  isFrozen: { type: Boolean, default: false },
   isBanned: { type: Boolean, default: false },
-  banReason: { type: String, default: "" },
   createdAt: { type: Date, default: Date.now }
 });
 
 const User = mongoose.model('User', UserSchema);
 
-// 9 भाषाओं के लेवल वर्ड्स का बैंक (1 से 100 लेवल के लिए प्रोग्रेसिव लॉजिक)
+// 9 भाषाओं की डिक्शनरी (लोकल भाषा के शब्द जनरेशन के लिए फिक्स)
 const BASE_DICTIONARY = {
   en: ["MIND", "NODE", "COIN", "TON", "BLOCK", "PROOF", "CHAIN", "SMART", "CRYPTO", "TOKEN", "FUTURE", "SECURE", "DECENTRAL", "CONSENSUS", "VALIDATOR", "BLOCKCHAIN", "ALGORITHM"],
   hi: ["मन", "ज्ञान", "सत्य", "शक्ति", "चेतना", "प्रकाश", "विचार", "बुद्धि", "तंत्र", "क्रांति", "संस्कार", "दूरदर्शी", "संकल्प", "आत्मज्ञान"],
@@ -54,17 +51,13 @@ const BASE_DICTIONARY = {
   es: ["MENTE", "NODO", "BLOQUE", "CADENA", "FUTURO", "TOKEN", "SEGURA", "CRIPTOMEDA"]
 };
 
-// 100 लेवल के बाद का "Daily Mind Loop" (सीक्रेट वाक्य चैलेंज)
 let dailyMindLoopConfig = {
   wordsPool: ["Knowledge", "Power", "Decentralized", "Human", "Mind", "Creates", "Freedom", "Network"],
   correctSentence: "Decentralized Mind Creates Freedom",
   rewardAmount: 250.0
 };
 
-const MASTER_ADMIN_KEY = "POM_LEADER_CHIEF_2026";
-let isSystemPaused = false;
-
-// 1. यूज़र ऑथेंटिकेशन और 2-लेवल रेफरल बाइंडिंग (startapp सपोर्टेड)
+// Auth & 2-Tier Referral Binding
 app.post('/api/auth', async (req, res) => {
   try {
     const { userId, platform, username, language, refCode } = req.body;
@@ -103,17 +96,13 @@ app.post('/api/auth', async (req, res) => {
       await user.save();
     }
 
-    if (user.isBanned) {
-      return res.status(403).json({ success: false, isBanned: true, message: `Access Denied: ${user.banReason || "Rule Violation"}` });
-    }
-
     res.json({ success: true, user, receiverAddress: MASTER_TON_ADDRESS });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// 2. लेवल का डेटा या 100 के बाद Daily Loop लाना
+// Get Game Data (Language wise words pool)
 app.get('/api/get-game-data', async (req, res) => {
   try {
     const { userId, lang } = req.query;
@@ -122,7 +111,6 @@ app.get('/api/get-game-data', async (req, res) => {
 
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-    // अगर यूज़र लेवल 100 पार कर चुका है -> Daily Mind Loop
     if (user.level > 100 || user.isDailyLoopUnlocked) {
       return res.json({
         success: true,
@@ -133,13 +121,11 @@ app.get('/api/get-game-data', async (req, res) => {
       });
     }
 
-    // 1 से 100 लेवल के लिए प्रोग्रेसिव लेटर पूल
     const wordList = BASE_DICTIONARY[currentLang];
     const targetWord = wordList[(user.level - 1) % wordList.length];
 
-    // शब्द के अक्षरों को बिखेरना + एक्स्ट्रा अक्षर जोड़ना
     let letterPool = targetWord.split('');
-    const extraChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const extraChars = currentLang === 'hi' ? "अआइईउऊऋएऐओऔकखगघचछजझटठडढतथदधनपफबभमयरलवशषसह" : "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     while (letterPool.length < Math.min(10, targetWord.length + 3)) {
       letterPool.push(extraChars[Math.floor(Math.random() * extraChars.length)]);
     }
@@ -159,16 +145,13 @@ app.get('/api/get-game-data', async (req, res) => {
   }
 });
 
-// 3. गेम वेरिफिकेशन इंजन (लेटर या वाक्य दोनों का सत्यापन)
+// Verify Game Answer & Referrals payout
 app.post('/api/verify-game', async (req, res) => {
   try {
-    if (isSystemPaused) return res.status(503).json({ success: false, message: "System Paused" });
-
     const { userId, answer, lang, mode } = req.body;
     const user = await User.findOne({ userId });
 
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
-    if (user.isBanned || user.isFrozen) return res.status(403).json({ success: false, message: "Account Restricted" });
 
     let isCorrect = false;
     let rewardAmount = 0;
@@ -180,7 +163,7 @@ app.post('/api/verify-game', async (req, res) => {
       const currentLang = BASE_DICTIONARY[lang] ? lang : 'en';
       const wordList = BASE_DICTIONARY[currentLang];
       const targetWord = wordList[(user.level - 1) % wordList.length];
-      isCorrect = answer.trim().toUpperCase() === targetWord.toUpperCase();
+      isCorrect = answer.trim() === targetWord;
       rewardAmount = 10 + (user.level * 2);
     }
 
@@ -193,14 +176,12 @@ app.post('/api/verify-game', async (req, res) => {
 
       if (mode === "LEVEL_GAME") {
         user.level += 1;
-        if (user.level > 100) {
-          user.isDailyLoopUnlocked = true;
-        }
+        if (user.level > 100) user.isDailyLoopUnlocked = true;
       }
 
       await user.save();
 
-      // Level 1 Referral (10%)
+      // L1 Referral (10%)
       if (user.referredBy) {
         const l1 = await User.findOne({ userId: user.referredBy });
         if (l1) {
@@ -211,7 +192,7 @@ app.post('/api/verify-game', async (req, res) => {
         }
       }
 
-      // Level 2 Referral (4%)
+      // L2 Referral (4%)
       if (user.level2Upline) {
         const l2 = await User.findOne({ userId: user.level2Upline });
         if (l2) {
@@ -224,28 +205,22 @@ app.post('/api/verify-game', async (req, res) => {
 
       return res.json({
         success: true,
-        message: mode === "DAILY_LOOP" ? "Mind Loop Solved!" : "Level Complete!",
+        message: "Level Complete!",
         earned: earned,
         newBalance: user.balance,
-        newLevel: user.level,
-        isDailyLoopUnlocked: user.isDailyLoopUnlocked
+        newLevel: user.level
       });
     } else {
       user.livesLeft = Math.max(0, user.livesLeft - 1);
       await user.save();
-
-      return res.json({
-        success: false,
-        message: "Wrong Match! Try again.",
-        livesLeft: user.livesLeft
-      });
+      return res.json({ success: false, message: "Wrong Match!", livesLeft: user.livesLeft });
     }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// 4. TON और Pi वॉलेट बाइंडिंग
+// Bind Wallets
 app.post('/api/bind-wallet', async (req, res) => {
   try {
     const { userId, tonAddress, piAddress } = req.body;
@@ -256,13 +231,13 @@ app.post('/api/bind-wallet', async (req, res) => {
     if (piAddress) user.piWalletAddress = piAddress;
 
     await user.save();
-    res.json({ success: true, message: "Wallet bound", user });
+    res.json({ success: true, user });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// 5. 0.1 TON पेमेंट कन्फर्मेशन
+// Confirm 0.1 TON Payment
 app.post('/api/confirm-ton-payment', async (req, res) => {
   try {
     const { userId, tonAddress } = req.body;
@@ -280,7 +255,7 @@ app.post('/api/confirm-ton-payment', async (req, res) => {
   }
 });
 
-// 6. रेफरल आँकड़े
+// Referral Stats Endpoint
 app.get('/api/referrals/:userId', async (req, res) => {
   try {
     const user = await User.findOne({ userId: req.params.userId });
