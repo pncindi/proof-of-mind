@@ -8,6 +8,7 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
   <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+  <!-- Adsgram SDK -->
   <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
 
@@ -27,19 +28,29 @@
         <span class="text-[10px] font-mono text-slate-400">NODE v3.1</span>
         <span id="levelBadge" class="text-[10px] px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30">Level 1</span>
       </div>
-      <div class="flex items-center gap-1.5 bg-slate-800/80 border border-slate-700 px-2 py-1 rounded-lg">
-        <span class="text-xs">🌐</span>
-        <select id="langSelect" onchange="changeLanguage(this.value)" class="bg-transparent text-[11px] text-sky-400 font-bold outline-none cursor-pointer">
-          <option value="en" class="bg-slate-900 text-white">English</option>
-          <option value="hi" class="bg-slate-900 text-white">हिन्दी (India)</option>
-          <option value="vi" class="bg-slate-900 text-white">Tiếng Việt</option>
-          <option value="id" class="bg-slate-900 text-white">Indonesia</option>
-          <option value="zh" class="bg-slate-900 text-white">中文</option>
-          <option value="bn" class="bg-slate-900 text-white">বাংলা</option>
-          <option value="ar" class="bg-slate-900 text-white">العربية</option>
-          <option value="ru" class="bg-slate-900 text-white">Русский</option>
-          <option value="es" class="bg-slate-900 text-white">Español</option>
-        </select>
+      
+      <!-- Controls Right Side (Lang + Whitepaper) -->
+      <div class="flex items-center gap-2">
+        <!-- Whitepaper Button -->
+        <button onclick="window.open('https://proof-of-mind.vercel.app/whitepaper', '_blank')" class="bg-indigo-600/80 hover:bg-indigo-500 border border-indigo-400 px-2 py-1 rounded-lg text-[11px] font-bold text-white transition shadow-md flex items-center gap-1">
+          📄 Docs
+        </button>
+
+        <!-- Language Selector -->
+        <div class="flex items-center gap-1.5 bg-slate-800/80 border border-slate-700 px-2 py-1 rounded-lg">
+          <span class="text-xs">🌐</span>
+          <select id="langSelect" onchange="changeLanguage(this.value)" class="bg-transparent text-[11px] text-sky-400 font-bold outline-none cursor-pointer">
+            <option value="en" class="bg-slate-900 text-white">English</option>
+            <option value="hi" class="bg-slate-900 text-white">हिन्दी (India)</option>
+            <option value="vi" class="bg-slate-900 text-white">Tiếng Việt</option>
+            <option value="id" class="bg-slate-900 text-white">Indonesia</option>
+            <option value="zh" class="bg-slate-900 text-white">中文</option>
+            <option value="bn" class="bg-slate-900 text-white">বাংলা</option>
+            <option value="ar" class="bg-slate-900 text-white">العربية</option>
+            <option value="ru" class="bg-slate-900 text-white">Русский</option>
+            <option value="es" class="bg-slate-900 text-white">Español</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -66,22 +77,43 @@
 
   <!-- TAB 1: MINE -->
   <div id="tab-mine" class="tab-content px-4 flex flex-col items-center flex-1 justify-center">
+    
+    <!-- Energy/Hearts Display -->
     <div class="flex items-center space-x-2 mb-3">
       <span class="text-xs text-slate-400">Energy Lives:</span>
       <span id="livesDisplay" class="text-sm font-bold text-red-400">❤️❤️❤️❤️❤️</span>
     </div>
 
-    <div class="w-full min-h-[70px] brand-card border border-dashed border-slate-700 rounded-2xl p-3 flex flex-wrap items-center justify-center gap-2 mb-4">
-      <span id="itemPlaceholder" class="text-xs text-slate-500 italic">टैप करके उत्तर बनाएं...</span>
-      <div id="constructedItems" class="flex flex-wrap gap-1.5"></div>
+    <!-- Game UI (Hidden if out of hearts) -->
+    <div id="game-ui-container" class="w-full flex flex-col items-center">
+      <div class="w-full min-h-[70px] brand-card border border-dashed border-slate-700 rounded-2xl p-3 flex flex-wrap items-center justify-center gap-2 mb-4">
+        <span id="itemPlaceholder" class="text-xs text-slate-500 italic">टैप करके उत्तर बनाएं...</span>
+        <div id="constructedItems" class="flex flex-wrap gap-1.5"></div>
+      </div>
+
+      <!-- Hint Display (Admin Panel) -->
+      <div id="hintDisplay" class="w-full text-center text-[11px] text-sky-300 font-medium mb-3 hidden">
+        💡 Hint: <span></span>
+      </div>
+
+      <div id="chipsContainer" class="flex flex-wrap justify-center gap-2 max-w-sm mb-5"></div>
+
+      <div class="flex gap-3 w-full max-w-xs mb-4">
+        <button onclick="resetCurrentWorkspace()" class="w-1/3 py-3 rounded-xl brand-card border border-slate-700 text-xs font-bold active:scale-95 transition">Reset</button>
+        <button onclick="submitWorkspace()" class="w-2/3 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold text-sm shadow-lg active:scale-95 transition">Verify & Mine ⚡</button>
+      </div>
     </div>
 
-    <div id="chipsContainer" class="flex flex-wrap justify-center gap-2 max-w-sm mb-5"></div>
-
-    <div class="flex gap-3 w-full max-w-xs mb-4">
-      <button onclick="resetCurrentWorkspace()" class="w-1/3 py-3 rounded-xl brand-card border border-slate-700 text-xs font-bold active:scale-95 transition">Reset</button>
-      <button onclick="submitWorkspace()" class="w-2/3 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold text-sm shadow-lg active:scale-95 transition">Verify & Mine ⚡</button>
+    <!-- Adsgram Button (Shows when Hearts = 0) -->
+    <div id="ads-container" class="w-full flex flex-col items-center justify-center hidden my-10">
+      <div class="text-5xl mb-3">💔</div>
+      <h3 class="text-lg font-bold text-white mb-1">Out of Energy!</h3>
+      <p class="text-xs text-slate-400 mb-5 text-center">आपकी एनर्जी खत्म हो गई है। मुफ़्त में 5 ❤️ वापस पाने के लिए एक छोटा वीडियो देखें।</p>
+      <button onclick="showAdsgramVideo()" class="w-full max-w-xs py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-sm shadow-lg active:scale-95 transition flex items-center justify-center gap-2">
+        📺 Watch Ad to Recharge
+      </button>
     </div>
+
   </div>
 
   <!-- TAB 2: TASKS -->
@@ -192,13 +224,15 @@
 
   <script>
     const BACKEND_URL = "https://proof-of-mind-api.onrender.com"; 
-    
-    // ENFORCED BOT USERNAME
     const BOT_USERNAME = "proof_of_mind_bot"; 
 
     let currentUser = null;
     let selectedItems = [];
     let currentLang = 'en';
+    let currentTarget = ""; // नया: आंसर वेरीफाई करने के लिए
+
+    // --- ADSGRAM INITIALIZATION (Block ID: 57227) ---
+    const AdController = window.Adsgram.init({ blockId: "57227" });
 
     // TON CONNECT INITIALIZATION (Wallet Binding)
     const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
@@ -239,7 +273,7 @@
             const transaction = {
                 validUntil: Math.floor(Date.now() / 1000) + 60,
                 messages: [{
-                    address: "UQD5ZiNy8-eV7l6Ny46c-f98USLg-JXPTRRIPMV-0YiadqJV", // Admin Wallet
+                    address: "UQD5ZiNy8-eV7l6Ny46c-f98USLg-JXPTRRIPMV-0YiadqJV", 
                     amount: "100000000" // 0.1 TON
                 }]
             };
@@ -286,7 +320,6 @@
       const startParam = tg.initDataUnsafe?.start_param;
       if (startParam && startParam.startsWith('ref_')) { uplineRefCode = startParam.replace('ref_', ''); }
 
-      // Referral Link Name FIX
       document.getElementById("refLinkInput").value = `https://t.me/${BOT_USERNAME}?startapp=ref_${user.id}`;
       registerNode(user.id, user.username || user.first_name, uplineRefCode);
     } else {
@@ -314,14 +347,42 @@
       } catch (err) { console.error("API Auth Error:", err); }
     }
 
+    // --- UPDATE UI FOR HEARTS & ADS ---
+    function updateHeartsUI(hearts) {
+        document.getElementById("livesDisplay").innerText = "❤️".repeat(hearts) + "🖤".repeat(5 - hearts);
+        
+        if (hearts <= 0) {
+            document.getElementById("game-ui-container").classList.add("hidden");
+            document.getElementById("ads-container").classList.remove("hidden");
+        } else {
+            document.getElementById("game-ui-container").classList.remove("hidden");
+            document.getElementById("ads-container").classList.add("hidden");
+        }
+    }
+
     async function loadGameWorkspace() {
       if (!currentUser) return;
       try {
         const res = await fetch(`${BACKEND_URL}/api/get-game-data?userId=${currentUser.userId}&lang=${currentLang}`);
         const data = await res.json();
+        
         if (data.success) {
           document.getElementById("levelBadge").innerText = `Level ${data.level}`;
+          currentTarget = data.target; 
+          updateHeartsUI(data.hearts);
+          
+          // Hint Logic
+          const hintDisplay = document.getElementById("hintDisplay");
+          if (data.hint && data.hint !== "") {
+              hintDisplay.querySelector("span").innerText = data.hint;
+              hintDisplay.classList.remove("hidden");
+          } else {
+              hintDisplay.classList.add("hidden");
+          }
+
           renderChips(data.pool);
+        } else if (data.message === "No hearts left. Watch Ad.") {
+          updateHeartsUI(0);
         }
       } catch (e) { console.error("Game Load Error:", e); }
     }
@@ -365,16 +426,38 @@
         const res = await fetch(`${BACKEND_URL}/api/verify-game`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: currentUser.userId, answer, lang: currentLang })
+          body: JSON.stringify({ userId: currentUser.userId, answer, lang: currentLang, targetWord: currentTarget })
         });
         const data = await res.json();
-        alert(data.success ? `सफलता! +${data.earned} PoM` : data.message);
+        
         if (data.success) {
+          alert(`सफलता! +${data.earned} PoM`);
           currentUser.balance = data.newBalance;
           document.getElementById("userBalance").innerText = data.newBalance.toFixed(2);
           loadGameWorkspace();
+        } else {
+          // गलत जवाब
+          alert(`Wrong Answer! 💔 (-1 Heart)`);
+          resetCurrentWorkspace();
+          if (data.hearts !== undefined) updateHeartsUI(data.hearts);
         }
       } catch (err) { alert("Network Connection Error"); }
+    }
+
+    // --- ADSGRAM VIDEO TRIGGER ---
+    function showAdsgramVideo() {
+        AdController.show().then((result) => {
+            // ऐड पूरा देखने पर
+            fetch(`${BACKEND_URL}/api/adsgram-webhook?userid=${currentUser.userId}`)
+            .then(() => {
+                alert("🎉 Energy Full! 5 ❤️ restored.");
+                updateHeartsUI(5);
+                loadGameWorkspace();
+            });
+        }).catch((err) => {
+            // ऐड बीच में काटा
+            alert("आपको एनर्जी वापस पाने के लिए पूरा वीडियो देखना होगा।");
+        });
     }
 
     function openTaskLink(taskId, url) {
