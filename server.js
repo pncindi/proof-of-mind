@@ -38,31 +38,31 @@ const UserSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', UserSchema);
 
+// मजबूत शब्द बैंक (सभी 9 भाषाओं के लिए फिक्स)
 const BASE_DICTIONARY = {
-  en: ["MIND", "NODE", "COIN", "TON", "BLOCK", "PROOF", "CHAIN", "SMART", "CRYPTO", "TOKEN", "FUTURE", "SECURE", "DECENTRAL"],
-  hi: ["मन", "ज्ञान", "सत्य", "शक्ति", "चेतना", "प्रकाश", "विचार", "बुद्धि", "तंत्र", "क्रांति", "संस्कार"],
-  vi: ["TÂM", "MẠNG", "KHỐI", "XÍCH", "ĐỒNG", "TRÍ", "TIỀN", "TƯƠNG", "MINH", "THỰC"],
-  id: ["AKAL", "NODE", "KOIN", "BLOK", "PIKIR", "RANTAI", "PINTAR", "KRIPTO", "JARING"],
-  zh: ["心灵", "节点", "代币", "区块", "公链", "密码", "智能", "未来", "共识", "去中心"],
-  bn: ["মন", "জ্ঞান", "সত্য", "শক্তি", "চেতনা", "আলো", "চিন্তা", "বুদ্ধি", "নেটওয়ার্ক"],
-  ar: ["عقل", "نود", "كتلة", "شبكة", "عملة", "فكر", "سلسلة", "تشفير", "مستقبل"],
-  ru: ["УМ", "УЗЕЛ", "БЛОК", "СЕТЬ", "ЦЕПЬ", "МОЗГ", "ТОКЕН", "РАЗУМ", "КРИПТО"],
-  es: ["MENTE", "NODO", "BLOQUE", "CADENA", "FUTURO", "TOKEN", "SEGURA", "CRIPTOMEDA"]
+  en: ["MIND", "NODE", "COIN", "TON", "BLOCK", "PROOF", "CHAIN", "SMART", "CRYPTO", "TOKEN", "FUTURE", "SECURE"],
+  hi: ["मन", "ज्ञान", "सत्य", "शक्ति", "चेतना", "प्रकाश", "विचार", "बुद्धि", "तंत्र", "क्रांति"],
+  vi: ["TÂM", "MẠNG", "KHỐI", "XÍCH", "ĐỒNG", "TRÍ", "TIỀN", "MINH", "THỰC"],
+  id: ["AKAL", "NODE", "KOIN", "BLOK", "PIKIR", "RANTAI", "PINTAR", "KRIPTO"],
+  zh: ["心灵", "节点", "代币", "区块", "公链", "密码", "智能", "未来"],
+  bn: ["মন", "জ্ঞান", "সত্য", "শক্তি", "চেতনা", "আলো", "চিন্তা", "বুদ্ধি"],
+  ar: ["عقل", "نود", "كتلة", "شبكة", "عملة", "فكر", "سلسلة", "تشفير"],
+  ru: ["УМ", "УЗЕЛ", "БЛОК", "СЕТЬ", "ЦЕПЬ", "МОЗГ", "ТОКЕН", "РАЗУМ"],
+  es: ["MENTE", "NODO", "BLOQUE", "CADENA", "FUTURO", "TOKEN", "SEGURA"]
 };
 
-// Auth & Referral Fix
+// Auth & Referral Binding Fix
 app.post('/api/auth', async (req, res) => {
   try {
-    let { userId, platform, username, language, refCode } = req.body;
-    userId = String(userId);
+    const { userId, platform, username, language, refCode } = req.body;
     let user = await User.findOne({ userId });
 
     if (!user) {
       let l1Leader = null;
       let l2Leader = null;
 
-      if (refCode && String(refCode) !== userId) {
-        const directUpline = await User.findOne({ userId: String(refCode) });
+      if (refCode && refCode !== userId) {
+        const directUpline = await User.findOne({ userId: refCode });
         if (directUpline) {
           l1Leader = directUpline.userId;
           directUpline.referralCountL1 += 1;
@@ -90,24 +90,22 @@ app.post('/api/auth', async (req, res) => {
       await user.save();
     }
 
-    res.json({ success: true, user, receiverAddress: MASTER_TON_ADDRESS });
+    res.json({ success: true, user });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Game Data Fix (Ensuring words pool is never empty)
+// Fix: Game Data & Chips Generation
 app.get('/api/get-game-data', async (req, res) => {
   try {
     const { userId, lang } = req.query;
-    let user = await User.findOne({ userId: String(userId) });
-    if (!user) {
-      user = new User({ userId: String(userId) });
-      await user.save();
-    }
-
+    const user = await User.findOne({ userId });
     const currentLang = BASE_DICTIONARY[lang] ? lang : 'en';
-    const wordList = BASE_DICTIONARY[currentLang] || BASE_DICTIONARY['en'];
+
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    const wordList = BASE_DICTIONARY[currentLang];
     const targetWord = wordList[(user.level - 1) % wordList.length];
 
     let letterPool = targetWord.split('');
@@ -119,8 +117,8 @@ app.get('/api/get-game-data', async (req, res) => {
 
     res.json({
       success: true,
-      mode: "LEVEL_GAME",
       level: user.level,
+      target: targetWord,
       pool: letterPool,
       reward: 10 + (user.level * 2)
     });
@@ -129,59 +127,70 @@ app.get('/api/get-game-data', async (req, res) => {
   }
 });
 
-// Verify Game Answer
+// Verify Game Answer & 2-Tier Payout
 app.post('/api/verify-game', async (req, res) => {
   try {
-    const { userId, answer, lang, mode } = req.body;
-    const user = await User.findOne({ userId: String(userId) });
+    const { userId, answer, lang } = req.body;
+    const user = await User.findOne({ userId });
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
     const currentLang = BASE_DICTIONARY[lang] ? lang : 'en';
-    const wordList = BASE_DICTIONARY[currentLang] || BASE_DICTIONARY['en'];
+    const wordList = BASE_DICTIONARY[currentLang];
     const targetWord = wordList[(user.level - 1) % wordList.length];
-    
-    const isCorrect = answer.trim() === targetWord;
-    if (isCorrect) {
-      const earned = (10 + (user.level * 2)) * (user.isVerified ? 2.5 : 1.0);
+
+    if (answer.trim().toUpperCase() === targetWord.toUpperCase()) {
+      const multiplier = user.isVerified ? 2.5 : 1.0;
+      const earned = (10 + (user.level * 2)) * multiplier;
+
       user.balance += earned;
       user.level += 1;
       await user.save();
 
-      // Referral Payouts
+      // L1 Payout (10%)
       if (user.referredBy) {
         const l1 = await User.findOne({ userId: user.referredBy });
-        if (l1) { l1.balance += earned * 0.10; l1.refRewardsEarned += earned * 0.10; await l1.save(); }
-      }
-      if (user.level2Upline) {
-        const l2 = await User.findOne({ userId: user.level2Upline });
-        if (l2) { l2.balance += earned * 0.04; l2.refRewardsEarned += earned * 0.04; await l2.save(); }
+        if (l1) {
+          l1.balance += earned * 0.10;
+          l1.refRewardsEarned += earned * 0.10;
+          await l1.save();
+        }
       }
 
-      return res.json({ success: true, message: "Level Complete!", earned, newBalance: user.balance, newLevel: user.level });
+      // L2 Payout (4%)
+      if (user.level2Upline) {
+        const l2 = await User.findOne({ userId: user.level2Upline });
+        if (l2) {
+          l2.balance += earned * 0.04;
+          l2.refRewardsEarned += earned * 0.04;
+          await l2.save();
+        }
+      }
+
+      res.json({ success: true, earned, newBalance: user.balance, newLevel: user.level });
     } else {
-      user.livesLeft = Math.max(0, user.livesLeft - 1);
-      await user.save();
-      return res.json({ success: false, message: "Wrong Match!" });
+      res.json({ success: false, message: "Wrong Answer!" });
     }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Task Complete Endpoint (Fixing task reward point generation)
+// Task Complete Endpoint (Fixes task reward claim)
 app.post('/api/complete-task', async (req, res) => {
   try {
-    const { userId, taskId, reward } = req.body;
-    const user = await User.findOne({ userId: String(userId) });
+    const { userId, taskId } = req.body;
+    const user = await User.findOne({ userId });
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-    if (!user.completedTasks.includes(taskId)) {
-      user.completedTasks.push(taskId);
-      user.balance += Number(reward) || 50;
-      await user.save();
-      return res.json({ success: true, newBalance: user.balance, completedTasks: user.completedTasks });
+    if (user.completedTasks.includes(taskId)) {
+      return res.json({ success: false, message: "Task already completed!" });
     }
-    res.json({ success: false, message: "Task already completed" });
+
+    user.completedTasks.push(taskId);
+    user.balance += 100; // 100 PoM reward per task
+    await user.save();
+
+    res.json({ success: true, newBalance: user.balance, completedTasks: user.completedTasks });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -190,8 +199,9 @@ app.post('/api/complete-task', async (req, res) => {
 // Referral Stats
 app.get('/api/referrals/:userId', async (req, res) => {
   try {
-    const user = await User.findOne({ userId: String(req.params.userId) });
+    const user = await User.findOne({ userId: req.params.userId });
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
     res.json({
       success: true,
       l1Count: user.referralCountL1 || 0,
@@ -203,31 +213,34 @@ app.get('/api/referrals/:userId', async (req, res) => {
   }
 });
 
-// Bind Wallets & Confirm TON
 app.post('/api/bind-wallet', async (req, res) => {
   try {
     const { userId, tonAddress, piAddress } = req.body;
-    const user = await User.findOne({ userId: String(userId) });
+    const user = await User.findOne({ userId });
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
     if (tonAddress) user.tonWalletAddress = tonAddress;
     if (piAddress) user.piWalletAddress = piAddress;
     await user.save();
-    res.json({ success: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.post('/api/confirm-ton-payment', async (req, res) => {
   try {
     const { userId, tonAddress } = req.body;
-    const user = await User.findOne({ userId: String(userId) });
+    const user = await User.findOne({ userId });
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
     user.isVerified = true;
     user.speedMultiplier = 2.5;
     if (tonAddress) user.tonWalletAddress = tonAddress;
     await user.save();
-    res.json({ success: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`PoM Server on port ${PORT}`));
