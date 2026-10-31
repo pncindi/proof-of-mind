@@ -38,15 +38,14 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between select-none pb-20">
 
-  <!-- Header Section with 9 Languages Switcher -->
+  <!-- Header Section -->
   <div class="p-4 space-y-2">
     <div class="flex justify-between items-center px-1">
       <div class="flex items-center gap-1.5">
-        <span class="text-[10px] font-mono text-slate-400">NODE v2.6</span>
+        <span class="text-[10px] font-mono text-slate-400">NODE v2.8</span>
         <span id="levelBadge" class="text-[10px] px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30">Level 1</span>
       </div>
 
-      <!-- 🌐 9 Regional Languages Selector -->
       <div class="flex items-center gap-1.5 bg-slate-800/80 border border-slate-700 px-2 py-1 rounded-lg">
         <span class="text-xs">🌐</span>
         <select id="langSelect" onchange="changeLanguage(this.value)" class="bg-transparent text-[11px] text-sky-400 font-bold outline-none cursor-pointer">
@@ -54,16 +53,15 @@
           <option value="hi" class="bg-slate-900 text-white">हिन्दी (India)</option>
           <option value="vi" class="bg-slate-900 text-white">Tiếng Việt (Vietnam)</option>
           <option value="id" class="bg-slate-900 text-white">Indonesia</option>
-          <option value="zh" class="bg-slate-900 text-white">中文 (China/HK/TW)</option>
+          <option value="zh" class="bg-slate-900 text-white">中文 (China)</option>
           <option value="bn" class="bg-slate-900 text-white">বাংলা (Bangladesh)</option>
-          <option value="ar" class="bg-slate-900 text-white">العربية (Gulf/Arab)</option>
+          <option value="ar" class="bg-slate-900 text-white">العربية (Arab)</option>
           <option value="ru" class="bg-slate-900 text-white">Русский (Russia)</option>
           <option value="es" class="bg-slate-900 text-white">Español (Global)</option>
         </select>
       </div>
     </div>
 
-    <!-- Main Header Card -->
     <div class="brand-card p-4 rounded-2xl flex justify-between items-center shadow-lg">
       <div class="flex items-center gap-3">
         <div id="brandLogoBox" class="relative w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-black text-lg">
@@ -73,93 +71,100 @@
         <div>
           <h2 id="userName" class="font-bold text-sm text-slate-100">Pioneer Node</h2>
           <div class="flex items-center gap-1.5 mt-0.5">
-            <span id="platformBadge" class="text-[9px] px-2 py-0.5 rounded-full bg-slate-800 text-sky-400 font-semibold border border-sky-500/20">TG NODE</span>
+            <span class="text-[9px] px-2 py-0.5 rounded-full bg-slate-800 text-sky-400 font-semibold border border-sky-500/20">TG NODE</span>
             <span id="verifiedBadge" class="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 font-medium border border-amber-500/30">Free Tier</span>
           </div>
         </div>
       </div>
       <div class="text-right">
-        <p data-i18n="pomBalance" class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">PoM Balance</p>
+        <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">PoM Balance</p>
         <span id="userBalance" class="text-xl font-black text-sky-400">0.00</span>
       </div>
     </div>
   </div>
 
-  <!-- TAB 1: MINE / PUZZLE ENGINE -->
+  <!-- TAB 1: MINE -->
   <div id="tab-mine" class="tab-content px-4 flex flex-col items-center flex-1 justify-center">
-    
-    <!-- Mode Indicator Badge -->
     <div id="gameModeBanner" class="mb-2 hidden">
       <span class="text-[10px] px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold uppercase tracking-wider">
-        🏆 Daily Mind Loop Mode (Levels 100+ Master)
+        🏆 Daily Mind Loop Mode
       </span>
     </div>
 
     <div class="flex items-center space-x-2 mb-3">
-      <span data-i18n="energyLives" class="text-xs text-slate-400">Energy Lives:</span>
+      <span class="text-xs text-slate-400">Energy Lives:</span>
       <span id="livesDisplay" class="text-sm font-bold text-red-400">❤️❤️❤️❤️❤️</span>
     </div>
 
-    <!-- Answer Workspace -->
     <div class="w-full min-h-[70px] brand-card border border-dashed border-slate-700 rounded-2xl p-3 flex flex-wrap items-center justify-center gap-2 mb-4">
-      <span id="itemPlaceholder" data-i18n="placeholder" class="text-xs text-slate-500 italic">टैप करके उत्तर बनाएं...</span>
+      <span id="itemPlaceholder" class="text-xs text-slate-500 italic">टैप करके उत्तर बनाएं...</span>
       <div id="constructedItems" class="flex flex-wrap gap-1.5"></div>
     </div>
 
-    <!-- Chips Container (Letters for Level 1-100, Words for Daily Loop) -->
     <div id="chipsContainer" class="flex flex-wrap justify-center gap-2 max-w-sm mb-5"></div>
 
     <div class="flex gap-3 w-full max-w-xs mb-4">
-      <button onclick="resetCurrentWorkspace()" data-i18n="btnReset" class="w-1/3 py-3 rounded-xl brand-card border border-slate-700 text-xs font-bold active:scale-95 transition">
-        Reset
-      </button>
-      <button onclick="submitWorkspace()" data-i18n="btnMine" class="w-2/3 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold text-sm shadow-lg active:scale-95 transition">
-        Verify & Mine ⚡
-      </button>
+      <button onclick="resetCurrentWorkspace()" class="w-1/3 py-3 rounded-xl brand-card border border-slate-700 text-xs font-bold active:scale-95 transition">Reset</button>
+      <button onclick="submitWorkspace()" class="w-2/3 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold text-sm shadow-lg active:scale-95 transition">Verify & Mine ⚡</button>
     </div>
 
-    <button onclick="watchRewardAd()" data-i18n="btnBoost" class="w-full max-w-xs py-2 rounded-xl brand-card border border-indigo-500/30 text-indigo-300 text-xs font-semibold flex items-center justify-center gap-2">
+    <button onclick="watchAdsgramRewardAd()" class="w-full max-w-xs py-2 rounded-xl brand-card border border-indigo-500/30 text-indigo-300 text-xs font-semibold flex items-center justify-center gap-2">
       🚀 Free Energy Boost (Watch Ad)
     </button>
   </div>
 
-  <!-- TAB 2: TASKS -->
-  <div id="tab-tasks" class="tab-content hidden px-4 flex-1">
-    <h3 data-i18n="tasksTitle" class="font-bold text-base mb-3 text-slate-200">Community Bounties</h3>
-    <div class="space-y-2.5">
-      <div class="brand-card p-3 rounded-xl flex justify-between items-center">
-        <div>
-          <p class="font-bold text-xs">Join Proof of Mind Channel</p>
-          <p class="text-[10px] text-sky-400">+50.00 PoM</p>
-        </div>
-        <button onclick="window.open('https://t.me/proofofmind_channel','_blank')" data-i18n="btnStart" class="px-3 py-1.5 rounded-lg bg-sky-600 text-xs font-bold">Start</button>
+  <!-- TAB 2: TASKS (YouTube with strict instructions, X, Telegram, Facebook) -->
+  <div id="tab-tasks" class="tab-content hidden px-4 flex-1 space-y-2.5">
+    <h3 class="font-bold text-base mb-2 text-slate-200">Community Bounties</h3>
+    
+    <div class="brand-card p-3 rounded-xl flex justify-between items-center">
+      <div>
+        <p class="font-bold text-xs text-sky-300">YouTube Channel Task</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">सब्सक्राइब YouTube चैनल, लाइक वीडियो, शेयर और कमेंट करें (+100 PoM)</p>
       </div>
-      <div class="brand-card p-3 rounded-xl flex justify-between items-center">
-        <div>
-          <p class="font-bold text-xs">Official YouTube Tutorial</p>
-          <p class="text-[10px] text-amber-400">+100.00 PoM</p>
-        </div>
-        <button onclick="alert('Tutorial Video Coming Soon!')" data-i18n="btnStart" class="px-3 py-1.5 rounded-lg bg-slate-700 text-xs font-bold">Watch</button>
+      <button onclick="window.open('https://www.youtube.com/@proof-of-mind_bot','_blank')" class="px-3 py-1.5 rounded-lg bg-amber-600 text-xs font-bold text-white">Start</button>
+    </div>
+
+    <div class="brand-card p-3 rounded-xl flex justify-between items-center">
+      <div>
+        <p class="font-bold text-xs text-sky-300">X (Twitter) Official</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">फॉलो करें और लेटेस्ट अपडेट्स पाएं</p>
       </div>
+      <button onclick="window.open('https://x.com/kuku56309','_blank')" class="px-3 py-1.5 rounded-lg bg-sky-600 text-xs font-bold text-white">Follow</button>
+    </div>
+
+    <div class="brand-card p-3 rounded-xl flex justify-between items-center">
+      <div>
+        <p class="font-bold text-xs text-sky-300">Facebook Community Page</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">फेसबुक पेज से जुड़ें और शेयर करें</p>
+      </div>
+      <button onclick="window.open('https://www.facebook.com/share/19nMDW2gSJ/','_blank')" class="px-3 py-1.5 rounded-lg bg-blue-600 text-xs font-bold text-white">Visit</button>
+    </div>
+
+    <div class="brand-card p-3 rounded-xl flex justify-between items-center">
+      <div>
+        <p class="font-bold text-xs text-sky-300">Telegram Community Chat</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">पब्लिक ग्रुप में शामिल हों और चर्चा करें</p>
+      </div>
+      <button onclick="window.open('https://t.me/+JpUnewC5FPEyMzNl','_blank')" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-xs font-bold text-white">Join</button>
     </div>
   </div>
 
-  <!-- TAB 3: FRENS (2-TIER REFERRAL ENGINE) -->
+  <!-- TAB 3: FRENS -->
   <div id="tab-frens" class="tab-content hidden px-4 flex-1">
     <div class="text-center my-2">
-      <h3 data-i18n="frensTitle" class="font-black text-xl text-sky-400">Invite Frens & Earn</h3>
-      <p data-i18n="frensDesc" class="text-[11px] text-slate-400 mt-1">अपने नेटवर्क को बड़ा करें और 2-लेवल कम्युनिटी कमीशन पाएं!</p>
+      <h3 class="font-black text-xl text-sky-400">Invite Frens & Earn</h3>
+      <p class="text-[11px] text-slate-400 mt-1">अपने नेटवर्क को बड़ा करें और 2-लेवल कम्युनिटी कमीशन पाएं!</p>
     </div>
 
     <div class="grid grid-cols-2 gap-2.5 mb-3">
       <div class="brand-card p-3 rounded-2xl border border-sky-500/30 text-center">
-        <span class="text-[10px] font-bold text-sky-400 uppercase tracking-wider">Level 1 (Direct)</span>
+        <span class="text-[10px] font-bold text-sky-400 uppercase">Level 1 (Direct)</span>
         <div class="text-2xl font-black text-white mt-1" id="l1FrensCount">0</div>
         <p class="text-[10px] text-emerald-400 font-semibold mt-0.5">10% Mining Share</p>
       </div>
-
       <div class="brand-card p-3 rounded-2xl border border-indigo-500/30 text-center">
-        <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Level 2 (Team)</span>
+        <span class="text-[10px] font-bold text-indigo-400 uppercase">Level 2 (Team)</span>
         <div class="text-2xl font-black text-white mt-1" id="l2FrensCount">0</div>
         <p class="text-[10px] text-indigo-300 font-semibold mt-0.5">4% Team Share</p>
       </div>
@@ -170,87 +175,61 @@
       <span id="refRewardsEarned" class="text-sm font-black text-emerald-400">+0.00 PoM</span>
     </div>
 
-    <!-- Referral Link Box with startapp parameter -->
     <div class="brand-card p-2.5 rounded-xl mb-3 flex items-center justify-between">
-      <input id="refLinkInput" type="text" readonly value="https://t.me/proofofmind_bot" class="bg-transparent text-[11px] text-slate-300 w-3/4 outline-none truncate" />
-      <button onclick="copyRefLink()" data-i18n="btnCopy" class="px-3 py-1.5 rounded-lg bg-sky-600 text-xs font-bold">Copy</button>
+      <input id="refLinkInput" type="text" readonly class="bg-transparent text-[11px] text-slate-300 w-3/4 outline-none truncate" />
+      <button onclick="copyRefLink()" class="px-3 py-1.5 rounded-lg bg-sky-600 text-xs font-bold text-white">Copy</button>
     </div>
 
-    <button onclick="shareOnTelegram()" data-i18n="btnInvite" class="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-bold text-sm shadow-lg active:scale-95 transition">
-      Invite a Fren 🚀
-    </button>
+    <button onclick="shareOnTelegram()" class="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-bold text-sm shadow-lg active:scale-95 transition">Invite a Fren 🚀</button>
   </div>
 
   <!-- TAB 4: WALLET & VERIFICATION -->
   <div id="tab-wallet" class="tab-content hidden px-4 flex-1 space-y-4">
-    
     <div class="brand-card p-4 rounded-2xl border border-sky-500/30">
       <div class="flex items-center justify-between mb-2">
-        <h4 class="text-xs font-bold text-sky-400 flex items-center gap-1.5">
-          <span>💎</span> TON Blockchain Verification
-        </h4>
+        <h4 class="text-xs font-bold text-sky-400 flex items-center gap-1.5"><span>💎</span> TON Verification</h4>
         <span id="tonStatusBadge" class="text-[9px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">Not Connected</span>
       </div>
 
-      <p data-i18n="tonVerifyDesc" class="text-[11px] text-slate-400 mb-3">
-        0.1 TON भेजकर अपना ह्यूमन नोड ऑन-चेन वेरिफ़ाई करें और 2.5x माइनिंग स्पीड व विथड्रॉल अनलॉक करें।
-      </p>
+      <p class="text-[11px] text-slate-400 mb-3">0.1 TON भेजकर ह्यूमन नोड वेरिफ़ाई करें और 2.5x माइनिंग स्पीड व विथड्रॉल अनलॉक करें।</p>
 
       <div class="space-y-2">
         <div id="ton-connect-btn" class="flex justify-center"></div>
-
-        <button id="payTonBtn" onclick="payTonVerification()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-90 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5">
-          <span>🛡️</span> <span data-i18n="btnVerifyTon">Verify Human Pioneer (0.1 TON)</span>
+        <button id="payTonBtn" onclick="payTonVerification()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5">
+          <span>🛡️</span> Verify Human Pioneer (0.1 TON)
         </button>
 
-        <!-- Auto-Hidden until Verified -->
         <div id="verifiedSuccessBox" class="hidden p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center">
           <p class="text-xs font-bold text-emerald-400">✔ Pioneer Node Verified On-Chain</p>
           <p class="text-[10px] text-slate-400 mt-0.5">2.5x Mining Multiplier Active</p>
         </div>
       </div>
-
-      <div id="boundTonAddress" class="mt-2 text-[10px] font-mono text-slate-400 truncate hidden">
-        Bound: <span class="text-sky-300"></span>
-      </div>
+      <div id="boundTonAddress" class="mt-2 text-[10px] font-mono text-slate-400 truncate hidden">Bound: <span class="text-sky-300"></span></div>
     </div>
 
-    <!-- Pi Network Wallet Binding -->
     <div class="brand-card p-4 rounded-2xl border border-amber-500/30">
-      <h4 class="text-xs font-bold text-amber-400 flex items-center gap-1.5 mb-1">
-        <span>🥧</span> Pi Network Wallet Binding
-      </h4>
-      <p data-i18n="piBindDesc" class="text-[11px] text-slate-400 mb-3">
-        भविष्य के Pi Network कम्युनिटी एयरड्रॉप और मेननेट डिस्ट्रीब्यूशन के लिए Pi Wallet एड्रेस बाइंड करें।
-      </p>
-
+      <h4 class="text-xs font-bold text-amber-400 flex items-center gap-1.5 mb-1"><span>🥧</span> Pi Network Wallet Binding</h4>
+      <p class="text-[11px] text-slate-400 mb-3">भविष्य के Pi Mainnet डिस्ट्रीब्यूशन के लिए Pi Wallet एड्रेस बाइंड करें।</p>
       <div class="flex gap-2">
-        <input type="text" id="piAddressInput" placeholder="Enter Pi Public Key / Address..." class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-amber-500 truncate" />
-        <button onclick="bindPiAddress()" data-i18n="btnSave" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition">
-          Save
-        </button>
+        <input type="text" id="piAddressInput" placeholder="Enter Pi Public Address..." class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none truncate" />
+        <button onclick="bindPiAddress()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition">Save</button>
       </div>
     </div>
-
   </div>
 
-  <!-- Bottom Navigation Bar -->
+  <!-- Bottom Nav -->
   <div class="fixed bottom-0 left-0 right-0 brand-card border-t border-slate-800 flex justify-around items-center py-2 z-50">
     <button onclick="switchTab('mine')" id="nav-mine" class="flex flex-col items-center py-1 flex-1 nav-active transition">
-      <span class="text-lg">⛏️</span>
-      <span data-i18n="navMine" class="text-[10px] font-bold mt-0.5">Mine</span>
+      <span class="text-lg">⛏️</span><span class="text-[10px] font-bold mt-0.5">Mine</span>
     </button>
     <button onclick="switchTab('tasks')" id="nav-tasks" class="flex flex-col items-center py-1 flex-1 text-slate-400 transition">
-      <span class="text-lg">📋</span>
-      <span data-i18n="navTasks" class="text-[10px] font-bold mt-0.5">Tasks</span>
+      <span class="text-lg">📋</span><span class="text-[10px] font-bold mt-0.5">Tasks</span>
     </button>
     <button onclick="switchTab('frens')" id="nav-frens" class="flex flex-col items-center py-1 flex-1 text-slate-400 transition">
-      <span class="text-lg">👥</span>
-      <span data-i18n="navFrens" class="text-[10px] font-bold mt-0.5">Frens</span>
+      <span class="text-lg">👥</span><span class="text-[10px] font-bold mt-0.5">Frens</span>
     </button>
     <button onclick="switchTab('wallet')" id="nav-wallet" class="flex flex-col items-center py-1 flex-1 text-slate-400 transition">
-      <span class="text-lg">💼</span>
-      <span data-i18n="navWallet" class="text-[10px] font-bold mt-0.5">Wallet</span>
+      <span class="text-lg">💼</span><span class="text-[10px] font-bold mt-0.5">Wallet</span>
     </button>
   </div>
 
@@ -263,214 +242,8 @@
     let currentMode = "LEVEL_GAME";
     let currentLang = 'en';
 
-    const translations = {
-      en: {
-        pomBalance: "PoM Balance",
-        energyLives: "Energy Lives:",
-        placeholder: "Tap below to form answer...",
-        btnReset: "Reset",
-        btnMine: "Verify & Mine ⚡",
-        btnBoost: "🚀 Free Energy Boost (Watch Ad)",
-        tasksTitle: "Community Bounties",
-        btnStart: "Start",
-        frensTitle: "Invite Frens & Earn",
-        frensDesc: "Expand your network and earn 2-tier community mining commissions!",
-        btnCopy: "Copy",
-        btnInvite: "Invite a Fren 🚀",
-        tonVerifyDesc: "Pay 0.1 TON gas fee to verify human node and unlock 2.5x mining speed & withdrawals.",
-        btnVerifyTon: "Verify Human Pioneer (0.1 TON)",
-        piBindDesc: "Bind your Pi Wallet Address for future Pi Network Mainnet community allocation.",
-        btnSave: "Save",
-        navMine: "Mine",
-        navTasks: "Tasks",
-        navFrens: "Frens",
-        navWallet: "Wallet"
-      },
-      hi: {
-        pomBalance: "PoM बैलेंस",
-        energyLives: "एनर्जी लाइफ:",
-        placeholder: "नीचे टैप करके उत्तर बनाएं...",
-        btnReset: "रीसेट",
-        btnMine: "वेरिफाई और माइन ⚡",
-        btnBoost: "🚀 फ्री एनर्जी बूस्ट (विज्ञापन देखें)",
-        tasksTitle: "कम्युनिटी टास्क",
-        btnStart: "शुरू करें",
-        frensTitle: "दोस्तों को इनवाइट करें",
-        frensDesc: "अपने नेटवर्क को बड़ा करें और 2-लेवल कम्युनिटी कमीशन पाएं!",
-        btnCopy: "कॉपी",
-        btnInvite: "दोस्त को जोड़ें 🚀",
-        tonVerifyDesc: "0.1 TON गैस फ़ीस देकर ह्यूमन नोड वेरिफ़ाई करें और 2.5x माइनिंग स्पीड व विथड्रॉल अनलॉक करें।",
-        btnVerifyTon: "ह्यूमन नोड वेरिफाई करें (0.1 TON)",
-        piBindDesc: "भविष्य के Pi Network कम्युनिटी एयरड्रॉप और मेननेट डिस्ट्रीब्यूशन के लिए Pi वॉलेट एड्रेस लिंक करें।",
-        btnSave: "सेव करें",
-        navMine: "माइन",
-        navTasks: "टास्क",
-        navFrens: "दोस्त",
-        navWallet: "वॉलेट"
-      },
-      vi: {
-        pomBalance: "Số dư PoM",
-        energyLives: "Năng lượng:",
-        placeholder: "Chạm bên dưới để ghép câu trả lời...",
-        btnReset: "Đặt lại",
-        btnMine: "Xác minh & Đào ⚡",
-        btnBoost: "🚀 Nạp năng lượng miễn phí (Xem quảng cáo)",
-        tasksTitle: "Nhiệm vụ cộng đồng",
-        btnStart: "Bắt đầu",
-        frensTitle: "Mời bạn bè & Kiếm tiền",
-        frensDesc: "Mở rộng mạng lưới và nhận hoa hồng 2 cấp độ!",
-        btnCopy: "Sao chép",
-        btnInvite: "Mời bạn bè 🚀",
-        tonVerifyDesc: "Thanh toán 0.1 TON để xác minh Pioneer thật và mở khóa 2.5x tốc độ đào.",
-        btnVerifyTon: "Xác minh Pioneer (0.1 TON)",
-        piBindDesc: "Liên kết ví Pi Network để nhận airdrop mainnet trong tương lai.",
-        btnSave: "Lưu",
-        navMine: "Đào",
-        navTasks: "Nhiệm vụ",
-        navFrens: "Bạn bè",
-        navWallet: "Ví"
-      },
-      id: {
-        pomBalance: "Saldo PoM",
-        energyLives: "Energi:",
-        placeholder: "Ketuk di bawah untuk menyusun jawaban...",
-        btnReset: "Reset",
-        btnMine: "Verifikasi & Tambang ⚡",
-        btnBoost: "🚀 Tambah Energi (Tonton Iklan)",
-        tasksTitle: "Tugas Komunitas",
-        btnStart: "Mulai",
-        frensTitle: "Undang Teman & Cuan",
-        frensDesc: "Perluas jaringan dan dapatkan komisi mining 2 tingkat!",
-        btnCopy: "Salin",
-        btnInvite: "Undang Teman 🚀",
-        tonVerifyDesc: "Bayar 0.1 TON untuk verifikasi node manusia dan buka kecepatan 2.5x.",
-        btnVerifyTon: "Verifikasi Pioneer (0.1 TON)",
-        piBindDesc: "Tautkan Dompet Pi Network untuk alokasi komunitas di mainnet.",
-        btnSave: "Simpan",
-        navMine: "Tambang",
-        navTasks: "Tugas",
-        navFrens: "Teman",
-        navWallet: "Dompet"
-      },
-      zh: {
-        pomBalance: "PoM 余额",
-        energyLives: "能量生命:",
-        placeholder: "点击下方按钮组合出正确答案...",
-        btnReset: "重置",
-        btnMine: "验证并挖矿 ⚡",
-        btnBoost: "🚀 免费能量恢复 (看广告)",
-        tasksTitle: "社区赏金任务",
-        btnStart: "去完成",
-        frensTitle: "邀请好友赚取收益",
-        frensDesc: "拓展您的节点网络，享受两级社区挖矿分成收益！",
-        btnCopy: "复制",
-        btnInvite: "立即邀请 🚀",
-        tonVerifyDesc: "支付 0.1 TON 燃料费完成真人节点验证，解锁 2.5 倍挖矿加速与提现权限。",
-        btnVerifyTon: "真人节点验证 (0.1 TON)",
-        piBindDesc: "绑定 Pi Network 钱包地址以接收未来主网社区分配额度。",
-        btnSave: "绑定保存",
-        navMine: "挖矿",
-        navTasks: "任务",
-        navFrens: "好友",
-        navWallet: "钱包"
-      },
-      bn: {
-        pomBalance: "PoM ব্যালেন্স",
-        energyLives: "এনার্জি লাইভস:",
-        placeholder: "উত্তর তৈরি করতে নিচে স্পর্শ করুন...",
-        btnReset: "রিসেট",
-        btnMine: "ভেরিফাই ও মাইন ⚡",
-        btnBoost: "🚀 এনার্জি বুস্ট (বিজ্ঞাপন দেখুন)",
-        tasksTitle: "কমিউনিটি টাস্ক",
-        btnStart: "শুরু করুন",
-        frensTitle: "বন্ধুদের আমন্ত্রণ জানান",
-        frensDesc: "আপনার নেটওয়ার্ক বাড়ান এবং ২-স্তরের মাইনিং কমিশন পান!",
-        btnCopy: "কপি",
-        btnInvite: "বন্ধু আমন্ত্রণ করুন 🚀",
-        tonVerifyDesc: "০.১ TON গ্যাস ফি দিয়ে হিউম্যান নোড ভেরিফাই করুন এবং ২.৫x স্পিড আনলক করুন।",
-        btnVerifyTon: "হিউম্যান নোড ভেরিফাই (0.1 TON)",
-        piBindDesc: "ভবিষ্যত পাই নেটওয়ার্ক মেইননেট এয়ারড্রপের জন্য পাই ওয়ালেট লিঙ্ক করুন।",
-        btnSave: "সংরক্ষণ",
-        navMine: "মাইন",
-        navTasks: "টাস্ক",
-        navFrens: "বন্ধু",
-        navWallet: "ওয়ালেট"
-      },
-      ar: {
-        pomBalance: "رصيد PoM",
-        energyLives: "الطاقة المتبقية:",
-        placeholder: "اضغط أدناه لتكوين الإجابة...",
-        btnReset: "إعادة تعيين",
-        btnMine: "تحقق وتعدين ⚡",
-        btnBoost: "🚀 شحن الطاقة (مشاهدة إعلان)",
-        tasksTitle: "مهام المجتمع",
-        btnStart: "ابدأ",
-        frensTitle: "دعوة الأصدقاء والربح",
-        frensDesc: "قم بتوسيع شبكتك واكسب عمولات تعدين مجتمعية من مستويين!",
-        btnCopy: "نسخ",
-        btnInvite: "دعوة صديق 🚀",
-        tonVerifyDesc: "ادفع 0.1 TON لتوثيق العقدة البشرية وفتح سرعة تعدين 2.5x وسحب الأرباح.",
-        btnVerifyTon: "توثيق العقدة (0.1 TON)",
-        piBindDesc: "اربط محفظة Pi Network الخاصة بك لتوزيعات الشبكة الرئيسية المستقبلية.",
-        btnSave: "حفظ",
-        navMine: "تعدين",
-        navTasks: "مهام",
-        navFrens: "أصدقاء",
-        navWallet: "محفظة"
-      },
-      ru: {
-        pomBalance: "Баланс PoM",
-        energyLives: "Энергия:",
-        placeholder: "Нажимайте ниже, чтобы составить ответ...",
-        btnReset: "Сброс",
-        btnMine: "Проверить и Майнить ⚡",
-        btnBoost: "🚀 Буст энергии (Смотреть рекламу)",
-        tasksTitle: "Задания сообщества",
-        btnStart: "Начать",
-        frensTitle: "Приглашай друзей",
-        frensDesc: "Развивайте сеть и получайте 2-уровневые реферальные бонусы!",
-        btnCopy: "Копировать",
-        btnInvite: "Пригласить друга 🚀",
-        tonVerifyDesc: "Оплатите 0.1 TON для верификации и получите буст майнинга 2.5x.",
-        btnVerifyTon: "Верификация (0.1 TON)",
-        piBindDesc: "Привяжите кошелек Pi Network для будущего распределения в мейннете.",
-        btnSave: "Сохранить",
-        navMine: "Майнинг",
-        navTasks: "Задания",
-        navFrens: "Друзья",
-        navWallet: "Кошелек"
-      },
-      es: {
-        pomBalance: "Saldo PoM",
-        energyLives: "Vidas de Energía:",
-        placeholder: "Toca abajo para formar la respuesta...",
-        btnReset: "Reiniciar",
-        btnMine: "Verificar y Minar ⚡",
-        btnBoost: "🚀 Impulso de Energía (Ver Anuncio)",
-        tasksTitle: "Tareas de la Comunidad",
-        btnStart: "Comenzar",
-        frensTitle: "Invita Amigos y Gana",
-        frensDesc: "¡Expande tu red y gana comisiones de minería de 2 niveles!",
-        btnCopy: "Copiar",
-        btnInvite: "Invitar a un Amigo 🚀",
-        tonVerifyDesc: "Paga 0.1 TON para verificar el nodo humano y desbloquear 2.5x de velocidad.",
-        btnVerifyTon: "Verificar Pionero (0.1 TON)",
-        piBindDesc: "Vincula tu billetera Pi Network para la asignación en la red principal.",
-        btnSave: "Guardar",
-        navMine: "Minar",
-        navTasks: "Tareas",
-        navFrens: "Amigos",
-        navWallet: "Billetera"
-      }
-    };
-
     function changeLanguage(lang) {
       currentLang = lang;
-      const dict = translations[lang] || translations.en;
-      document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (dict[key]) el.innerText = dict[key];
-      });
       loadGameWorkspace();
     }
 
@@ -486,9 +259,7 @@
       activeNav.classList.add('nav-active');
       activeNav.classList.remove('text-slate-400');
 
-      if (tabName === 'frens' && currentUser) {
-        loadReferralStats();
-      }
+      if (tabName === 'frens' && currentUser) loadReferralStats();
     }
 
     const tg = window.Telegram?.WebApp;
@@ -504,14 +275,12 @@
         uplineRefCode = startParam.replace('ref_', '');
       }
 
-      // महत्वपूर्ण: स्टार्टएप (startapp) पैरामीटर
       document.getElementById("refLinkInput").value = `https://t.me/proofofmind_bot?startapp=ref_${user.id}`;
       
       const userLang = (tg.initDataUnsafe?.user?.language_code || 'en').slice(0, 2);
-      if (translations[userLang]) {
+      if (["en", "hi", "vi", "id", "zh", "bn", "ar", "ru", "es"].includes(userLang)) {
         document.getElementById("langSelect").value = userLang;
         currentLang = userLang;
-        changeLanguage(userLang);
       }
       registerNode(user.id, 'TELEGRAM', user.username || user.first_name, currentLang, uplineRefCode);
     }
@@ -528,17 +297,11 @@
           currentUser = data.user;
           document.getElementById("userBalance").innerText = currentUser.balance.toFixed(2);
           
-          if (currentUser.isVerified) {
-            markVerifiedUI();
-          }
-          if (currentUser.piWalletAddress) {
-            document.getElementById("piAddressInput").value = currentUser.piWalletAddress;
-          }
+          if (currentUser.isVerified) markVerifiedUI();
+          if (currentUser.piWalletAddress) document.getElementById("piAddressInput").value = currentUser.piWalletAddress;
           loadGameWorkspace();
         }
-      } catch (err) {
-        console.error(err);
-      }
+      } catch (err) { console.error(err); }
     }
 
     async function loadGameWorkspace() {
@@ -558,9 +321,7 @@
             renderChips(data.pool, "LETTER");
           }
         }
-      } catch (e) {
-        console.error(e);
-      }
+      } catch (e) { console.error(e); }
     }
 
     function renderChips(items, type) {
@@ -570,11 +331,9 @@
 
       items.forEach((item, index) => {
         const btn = document.createElement("button");
-        if (type === "LETTER") {
-          btn.className = "puzzle-chip w-11 h-11 rounded-2xl brand-card border border-slate-700 text-base font-black text-sky-300 flex items-center justify-center shadow-md active:scale-90 transition";
-        } else {
-          btn.className = "puzzle-chip brand-card px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-200 border border-slate-700 active:scale-95 transition";
-        }
+        btn.className = type === "LETTER" 
+          ? "puzzle-chip w-11 h-11 rounded-2xl brand-card border border-slate-700 text-base font-black text-sky-300 flex items-center justify-center shadow-md active:scale-90 transition"
+          : "puzzle-chip brand-card px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-200 border border-slate-700 active:scale-95 transition";
         btn.id = `chip-${index}`;
         btn.innerText = item;
         btn.onclick = () => selectChip(item, index, type);
@@ -588,11 +347,9 @@
       document.getElementById(`chip-${index}`).classList.add("selected");
       
       const chip = document.createElement("span");
-      if (type === "LETTER") {
-        chip.className = "w-9 h-9 rounded-xl bg-sky-500/20 text-sky-300 border border-sky-500/40 text-sm font-extrabold flex items-center justify-center";
-      } else {
-        chip.className = "px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 text-xs font-semibold";
-      }
+      chip.className = type === "LETTER"
+        ? "w-9 h-9 rounded-xl bg-sky-500/20 text-sky-300 border border-sky-500/40 text-sm font-extrabold flex items-center justify-center"
+        : "px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 text-xs font-semibold";
       chip.innerText = item;
       document.getElementById("constructedItems").appendChild(chip);
     }
@@ -605,22 +362,14 @@
     }
 
     async function submitWorkspace() {
-      if (selectedItems.length < 1) {
-        alert(translations[currentLang].placeholder);
-        return;
-      }
+      if (selectedItems.length < 1) return alert("कृपया अक्षर या शब्द चुनें!");
       const answer = currentMode === "DAILY_LOOP" ? selectedItems.join(" ") : selectedItems.join("");
 
       try {
         const res = await fetch(`${BACKEND_URL}/api/verify-game`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: currentUser ? currentUser.userId : "TG_PIONEER_NODE",
-            answer: answer,
-            lang: currentLang,
-            mode: currentMode
-          })
+          body: JSON.stringify({ userId: currentUser.userId, answer, lang: currentLang, mode: currentMode })
         });
         const data = await res.json();
         alert(data.message + (data.earned ? ` (+${data.earned} PoM)` : ''));
@@ -630,8 +379,19 @@
           document.getElementById("userBalance").innerText = data.newBalance.toFixed(2);
           loadGameWorkspace();
         }
-      } catch (err) {
-        alert("Server connection failed");
+      } catch (err) { alert("Server connection failed"); }
+    }
+
+    function watchAdsgramRewardAd() {
+      if (typeof Adsgram !== 'undefined') {
+        const adController = Adsgram.init({ blockId: "int-7685" });
+        adController.show().then(() => {
+          document.getElementById("livesDisplay").innerText = "❤️❤️❤️❤️❤️";
+          alert("⚡ Energy Boosted Successfully!");
+        }).catch(() => { alert("Ad skipped or failed."); });
+      } else {
+        document.getElementById("livesDisplay").innerText = "❤️❤️❤️❤️❤️";
+        alert("⚡ Energy Boosted Successfully!");
       }
     }
 
@@ -645,9 +405,7 @@
           document.getElementById("l2FrensCount").innerText = data.l2Count;
           document.getElementById("refRewardsEarned").innerText = `+${data.totalEarned} PoM`;
         }
-      } catch (e) {
-        console.error(e);
-      }
+      } catch (e) { console.error(e); }
     }
 
     function markVerifiedUI() {
@@ -669,16 +427,9 @@
 
     function shareOnTelegram() {
       const link = document.getElementById("refLinkInput").value;
-      const text = encodeURIComponent("Proof of Mind पर मेरे साथ जुड़ें और मुफ़्त PoM टोकन माइन करें! 🧠⚡");
-      window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${text}`);
+      window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent("Proof of Mind पर मेरे साथ जुड़ें और मुफ़्त PoM टोकन माइन करें! 🧠⚡")}`);
     }
 
-    function watchRewardAd() {
-      alert("⚡ Free Life Refilled! Energy at 100%");
-      document.getElementById("livesDisplay").innerText = "❤️❤️❤️❤️❤️";
-    }
-
-    // TON CONNECT
     let tonConnectUI = null;
     try {
       tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
@@ -699,44 +450,27 @@
           await fetch(`${BACKEND_URL}/api/bind-wallet`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: currentUser ? currentUser.userId : "TG_PIONEER_NODE",
-              tonAddress: rawAddress
-            })
+            body: JSON.stringify({ userId: currentUser.userId, tonAddress: rawAddress })
           });
         }
       });
-    } catch (e) {
-      console.log("TonConnect Init:", e);
-    }
+    } catch (e) { console.log(e); }
 
     async function payTonVerification() {
-      if (!tonConnectUI || !tonConnectUI.connected) {
-        alert("पहले TON Wallet कनेक्ट करें!");
-        return;
-      }
+      if (!tonConnectUI || !tonConnectUI.connected) return alert("पहले TON Wallet कनेक्ट करें!");
 
       const transaction = {
         validUntil: Math.floor(Date.now() / 1000) + 360,
-        messages: [
-          {
-            address: RECEIVER_TON_WALLET,
-            amount: "100000000"
-          }
-        ]
+        messages: [{ address: RECEIVER_TON_WALLET, amount: "100000000" }]
       };
 
       try {
         const result = await tonConnectUI.sendTransaction(transaction);
         if (result && result.boc) {
-          alert("🎉 0.1 TON पेमेंट सफल! नोड वेरिफाई किया जा रहा है...");
           const res = await fetch(`${BACKEND_URL}/api/confirm-ton-payment`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: currentUser ? currentUser.userId : "TG_PIONEER_NODE",
-              tonAddress: tonConnectUI.account?.address
-            })
+            body: JSON.stringify({ userId: currentUser.userId, tonAddress: tonConnectUI.account?.address })
           });
           const data = await res.json();
           if (data.success) {
@@ -744,34 +478,22 @@
             alert("✅ नोड सफलतापूर्वक वेरिफाई हो गया! 2.5x माइनिंग स्पीड चालू हो गई है।");
           }
         }
-      } catch (err) {
-        alert("Transaction Cancelled or Failed: " + (err.message || "User declined"));
-      }
+      } catch (err) { alert("Transaction Cancelled or Failed"); }
     }
 
     async function bindPiAddress() {
       const address = document.getElementById("piAddressInput").value.trim();
-      if (!address || address.length < 15) {
-        alert("कृपया सही Pi Wallet Public Address दर्ज करें!");
-        return;
-      }
+      if (!address || address.length < 15) return alert("कृपया सही Pi Wallet Public Address दर्ज करें!");
 
       try {
         const res = await fetch(`${BACKEND_URL}/api/bind-wallet`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: currentUser ? currentUser.userId : "TG_PIONEER_NODE",
-            piAddress: address
-          })
+          body: JSON.stringify({ userId: currentUser.userId, piAddress: address })
         });
         const data = await res.json();
-        if (data.success) {
-          alert("🥧 Pi Wallet Address बाइंड हो गया है!");
-        }
-      } catch (e) {
-        alert("Error saving Pi address");
-      }
+        if (data.success) alert("🥧 Pi Wallet Address बाइंड हो गया है!");
+      } catch (e) { alert("Error saving Pi address"); }
     }
   </script>
 </body>
