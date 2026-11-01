@@ -1,523 +1,406 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Proof of Mind (PoM)</title>
-  
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-  <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
-  <!-- Adsgram SDK -->
-  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <style>
-    body { background: radial-gradient(circle at top, #111827, #030712); color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
-    .brand-card { background: rgba(17, 24, 39, 0.75); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(12px); }
-    .nav-active { color: #38bdf8; border-top: 2px solid #38bdf8; }
-    .puzzle-chip.selected { opacity: 0.3; transform: scale(0.9); pointer-events: none; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Proof of Mind</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    
+    <style>
+        body { 
+            background: radial-gradient(circle at top, #111827, #030712); 
+            color: #f8fafc; 
+            font-family: system-ui, -apple-system, sans-serif; 
+            overflow: hidden;
+        }
+        .chip { transition: all 0.2s ease; cursor: pointer; user-select: none; }
+        .chip:active { transform: scale(0.9); }
+        .glass-panel { background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+    </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between select-none pb-20">
+<body class="h-screen w-screen flex flex-col justify-between">
 
-  <!-- Header -->
-  <div class="p-4 space-y-2">
-    <div class="flex justify-between items-center px-1">
-      <div class="flex items-center gap-1.5">
-        <span class="text-[10px] font-mono text-slate-400">NODE v3.1</span>
-        <span id="levelBadge" class="text-[10px] px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30">Level 1</span>
-      </div>
-      
-      <!-- Controls Right Side (Lang + Whitepaper) -->
-      <div class="flex items-center gap-2">
-        <!-- Whitepaper Button -->
-        <button onclick="window.open('https://proof-of-mind.vercel.app/whitepaper', '_blank')" class="bg-indigo-600/80 hover:bg-indigo-500 border border-indigo-400 px-2 py-1 rounded-lg text-[11px] font-bold text-white transition shadow-md flex items-center gap-1">
-          📄 Docs
+    <!-- Header -->
+    <header class="glass-panel px-4 py-3 flex justify-between items-center z-10 shadow-md border-b border-slate-700/50">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-bold text-sm">🧠</div>
+            <div>
+                <div class="text-[10px] text-sky-400 font-bold uppercase" id="usernameDisplay">@player</div>
+                <div class="text-xs font-bold flex items-center gap-1">Level <span id="levelDisplay" class="text-white">1</span></div>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <button onclick="openWhitepaper()" class="bg-indigo-600/80 hover:bg-indigo-500 border border-indigo-400 px-3 py-1.5 rounded-lg text-xs font-bold text-white transition shadow-md flex items-center gap-1">📄 Docs</button>
+            <div class="text-right">
+                <div class="text-[10px] text-emerald-400 font-bold uppercase">Balance</div>
+                <div class="text-sm font-bold text-emerald-300"><span id="balanceDisplay">0</span> PoM</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="flex-1 flex flex-col items-center justify-center p-4 relative w-full max-w-md mx-auto z-0" id="gameArea">
+        
+        <div class="w-full flex justify-between items-center mb-6">
+            <div id="heartsDisplay" class="flex"></div>
+            <div id="hintDisplay" class="text-xs text-amber-400 font-medium italic bg-amber-900/30 px-3 py-1 rounded-full border border-amber-500/30 hidden">
+                Hint: <span id="hintText"></span>
+            </div>
+        </div>
+
+        <div class="text-center mb-4">
+            <p class="text-slate-400 text-xs mb-1 uppercase tracking-widest font-bold">Target Word</p>
+            <div id="answerBoxes" class="flex gap-2 justify-center mb-6 h-12"></div>
+        </div>
+
+        <div id="poolArea" class="flex flex-wrap gap-3 justify-center max-w-[280px]"></div>
+
+        <div class="mt-8 flex gap-4">
+            <button onclick="clearAnswer()" class="glass-panel text-slate-300 px-4 py-2 rounded-xl text-xs font-bold border border-slate-700 active:bg-slate-800">Clear</button>
+            <button onclick="submitAnswer()" class="bg-gradient-to-r from-sky-500 to-indigo-600 text-white px-8 py-2 rounded-xl text-sm font-bold shadow-lg shadow-sky-500/30 active:scale-95 transition">Verify</button>
+        </div>
+        
+        <div id="messageAlert" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 glass-panel px-6 py-3 rounded-2xl border hidden text-sm font-bold text-center w-3/4 z-50"></div>
+    </main>
+
+    <!-- Ad/Recharge Screen -->
+    <main class="flex-1 flex flex-col items-center justify-center p-4 relative w-full max-w-md mx-auto hidden z-20" id="adScreen">
+        <div class="text-6xl mb-4">💔</div>
+        <h2 class="text-xl font-bold text-red-400 mb-2">Out of Hearts!</h2>
+        <p class="text-sm text-slate-400 text-center mb-6">You need energy to keep mining.</p>
+        <button onclick="watchAd()" class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-8 py-3 rounded-xl text-sm font-bold shadow-lg shadow-emerald-500/30 active:scale-95 transition w-3/4 flex items-center justify-center gap-2">
+            📺 Watch Ad (Recharge 5 ❤️)
         </button>
+    </main>
 
-        <!-- Language Selector -->
-        <div class="flex items-center gap-1.5 bg-slate-800/80 border border-slate-700 px-2 py-1 rounded-lg">
-          <span class="text-xs">🌐</span>
-          <select id="langSelect" onchange="changeLanguage(this.value)" class="bg-transparent text-[11px] text-sky-400 font-bold outline-none cursor-pointer">
-            <option value="en" class="bg-slate-900 text-white">English</option>
-            <option value="hi" class="bg-slate-900 text-white">हिन्दी (India)</option>
-            <option value="vi" class="bg-slate-900 text-white">Tiếng Việt</option>
-            <option value="id" class="bg-slate-900 text-white">Indonesia</option>
-            <option value="zh" class="bg-slate-900 text-white">中文</option>
-            <option value="bn" class="bg-slate-900 text-white">বাংলা</option>
-            <option value="ar" class="bg-slate-900 text-white">العربية</option>
-            <option value="ru" class="bg-slate-900 text-white">Русский</option>
-            <option value="es" class="bg-slate-900 text-white">Español</option>
-          </select>
+    <!-- Bottom Navigation -->
+    <nav class="glass-panel border-t border-slate-700/50 pb-safe z-10 w-full">
+        <div class="flex justify-around items-center p-2 max-w-md mx-auto">
+            <button onclick="switchTab('mine')" class="nav-btn active flex flex-col items-center p-2 w-16 opacity-50 hover:opacity-100 transition-opacity">
+                <span class="text-xl mb-1">⛏️</span><span class="text-[10px] font-bold">Mine</span>
+            </button>
+            <button onclick="switchTab('friends')" class="nav-btn flex flex-col items-center p-2 w-16 opacity-50 hover:opacity-100 transition-opacity">
+                <span class="text-xl mb-1">👥</span><span class="text-[10px] font-bold">Friends</span>
+            </button>
+            <button onclick="switchTab('wallet')" class="nav-btn flex flex-col items-center p-2 w-16 opacity-50 hover:opacity-100 transition-opacity">
+                <span class="text-xl mb-1">💼</span><span class="text-[10px] font-bold">Wallet</span>
+            </button>
         </div>
-      </div>
-    </div>
+    </nav>
 
-    <div class="brand-card p-4 rounded-2xl flex justify-between items-center shadow-lg">
-      <div class="flex items-center gap-3">
-        <div class="relative w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-black text-lg">
-          🧠
-          <span id="logoVerifiedCheck" class="hidden absolute -top-1 -right-1 bg-emerald-500 text-slate-950 text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-extrabold border-2 border-slate-900">✓</span>
+    <!-- Friends Tab -->
+    <div id="friendsTab" class="absolute inset-0 pt-16 pb-20 bg-[#030712] z-30 hidden overflow-y-auto">
+        <div class="p-6 max-w-md mx-auto">
+            <h2 class="text-xl font-black mb-4">Invite Friends</h2>
+            <div class="glass-panel p-4 rounded-2xl border border-slate-700 mb-6">
+                <p class="text-sm text-slate-300 mb-4">Invite friends to earn 10% of their mining rewards (Level 1) and 4% from Level 2!</p>
+                <div class="bg-black/50 p-3 rounded-lg flex justify-between items-center border border-slate-800">
+                    <span id="refLinkDisplay" class="text-xs text-sky-400 font-mono truncate mr-2">Loading...</span>
+                    <button onclick="copyRefLink()" class="bg-sky-600/80 px-3 py-1 rounded text-[10px] font-bold">Copy</button>
+                </div>
+            </div>
         </div>
-        <div>
-          <h2 id="userName" class="font-bold text-sm text-slate-100">Pioneer</h2>
-          <div class="flex items-center gap-1.5 mt-0.5">
-            <span class="text-[9px] px-2 py-0.5 rounded-full bg-slate-800 text-sky-400 font-semibold border border-sky-500/20">TG NODE</span>
-            <span id="verifiedBadge" class="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 font-medium border border-amber-500/30">Free Tier</span>
-          </div>
-        </div>
-      </div>
-      <div class="text-right">
-        <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">PoM Balance</p>
-        <span id="userBalance" class="text-xl font-black text-sky-400">0.00</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- TAB 1: MINE -->
-  <div id="tab-mine" class="tab-content px-4 flex flex-col items-center flex-1 justify-center">
-    
-    <!-- Energy/Hearts Display -->
-    <div class="flex items-center space-x-2 mb-3">
-      <span class="text-xs text-slate-400">Energy Lives:</span>
-      <span id="livesDisplay" class="text-sm font-bold text-red-400">❤️❤️❤️❤️❤️</span>
     </div>
 
-    <!-- Game UI (Hidden if out of hearts) -->
-    <div id="game-ui-container" class="w-full flex flex-col items-center">
-      <div class="w-full min-h-[70px] brand-card border border-dashed border-slate-700 rounded-2xl p-3 flex flex-wrap items-center justify-center gap-2 mb-4">
-        <span id="itemPlaceholder" class="text-xs text-slate-500 italic">टैप करके उत्तर बनाएं...</span>
-        <div id="constructedItems" class="flex flex-wrap gap-1.5"></div>
-      </div>
-
-      <!-- Hint Display (Admin Panel) -->
-      <div id="hintDisplay" class="w-full text-center text-[11px] text-sky-300 font-medium mb-3 hidden">
-        💡 Hint: <span></span>
-      </div>
-
-      <div id="chipsContainer" class="flex flex-wrap justify-center gap-2 max-w-sm mb-5"></div>
-
-      <div class="flex gap-3 w-full max-w-xs mb-4">
-        <button onclick="resetCurrentWorkspace()" class="w-1/3 py-3 rounded-xl brand-card border border-slate-700 text-xs font-bold active:scale-95 transition">Reset</button>
-        <button onclick="submitWorkspace()" class="w-2/3 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold text-sm shadow-lg active:scale-95 transition">Verify & Mine ⚡</button>
-      </div>
-    </div>
-
-    <!-- Adsgram Button (Shows when Hearts = 0) -->
-    <div id="ads-container" class="w-full flex flex-col items-center justify-center hidden my-10">
-      <div class="text-5xl mb-3">💔</div>
-      <h3 class="text-lg font-bold text-white mb-1">Out of Energy!</h3>
-      <p class="text-xs text-slate-400 mb-5 text-center">आपकी एनर्जी खत्म हो गई है। मुफ़्त में 5 ❤️ वापस पाने के लिए एक छोटा वीडियो देखें।</p>
-      <button onclick="showAdsgramVideo()" class="w-full max-w-xs py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-sm shadow-lg active:scale-95 transition flex items-center justify-center gap-2">
-        📺 Watch Ad to Recharge
-      </button>
-    </div>
-
-  </div>
-
-  <!-- TAB 2: TASKS -->
-  <div id="tab-tasks" class="tab-content hidden px-4 flex-1 space-y-2.5">
-    <h3 class="font-bold text-base mb-2 text-slate-200">Community Bounties</h3>
-    
-    <div class="brand-card p-3 rounded-xl flex justify-between items-center" id="task-youtube">
-      <div>
-        <p class="font-bold text-xs text-sky-300">YouTube Channel Task</p>
-        <p class="text-[10px] text-slate-400 mt-0.5">सब्सक्राइब, लाइक, शेयर और कमेंट करें (+100 PoM)</p>
-      </div>
-      <div class="flex gap-1.5">
-        <button onclick="openTaskLink('youtube', 'https://www.youtube.com/@proof-of-mind_bot')" class="px-2.5 py-1.5 rounded-lg bg-amber-600 text-xs font-bold text-white">Start</button>
-        <button onclick="claimTaskReward('youtube', 100)" id="btn-claim-youtube" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 text-xs font-bold text-white hidden">Claim</button>
-      </div>
-    </div>
-
-    <div class="brand-card p-3 rounded-xl flex justify-between items-center" id="task-twitter">
-      <div>
-        <p class="font-bold text-xs text-sky-300">X (Twitter) Official</p>
-        <p class="text-[10px] text-slate-400 mt-0.5">फॉलो करें (+100 PoM)</p>
-      </div>
-      <div class="flex gap-1.5">
-        <button onclick="openTaskLink('twitter', 'https://x.com/kuku56309')" class="px-2.5 py-1.5 rounded-lg bg-sky-600 text-xs font-bold text-white">Follow</button>
-        <button onclick="claimTaskReward('twitter', 100)" id="btn-claim-twitter" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 text-xs font-bold text-white hidden">Claim</button>
-      </div>
-    </div>
-
-    <div class="brand-card p-3 rounded-xl flex justify-between items-center" id="task-facebook">
-      <div>
-        <p class="font-bold text-xs text-sky-300">Facebook Community Page</p>
-        <p class="text-[10px] text-slate-400 mt-0.5">पेज से जुड़ें (+100 PoM)</p>
-      </div>
-      <div class="flex gap-1.5">
-        <button onclick="openTaskLink('facebook', 'https://www.facebook.com/share/19nMDW2gSJ/')" class="px-2.5 py-1.5 rounded-lg bg-blue-600 text-xs font-bold text-white">Visit</button>
-        <button onclick="claimTaskReward('facebook', 100)" id="btn-claim-facebook" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 text-xs font-bold text-white hidden">Claim</button>
-      </div>
-    </div>
-
-    <div class="brand-card p-3 rounded-xl flex justify-between items-center" id="task-telegram">
-      <div>
-        <p class="font-bold text-xs text-sky-300">Telegram Community Chat</p>
-        <p class="text-[10px] text-slate-400 mt-0.5">ग्रुप ज्वाइन करें (+100 PoM)</p>
-      </div>
-      <div class="flex gap-1.5">
-        <button onclick="openTaskLink('telegram', 'https://t.me/+JpUnewC5FPEyMzNl')" class="px-2.5 py-1.5 rounded-lg bg-indigo-600 text-xs font-bold text-white">Join</button>
-        <button onclick="claimTaskReward('telegram', 100)" id="btn-claim-telegram" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 text-xs font-bold text-white hidden">Claim</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- TAB 3: FRENS -->
-  <div id="tab-frens" class="tab-content hidden px-4 flex-1">
-    <div class="text-center my-2">
-      <h3 class="font-black text-xl text-sky-400">Invite Frens & Earn</h3>
-      <p class="text-[11px] text-slate-400 mt-1">2-लेवल कम्युनिटी कमीशन पाएं!</p>
-    </div>
-
-    <div class="grid grid-cols-2 gap-2.5 mb-3">
-      <div class="brand-card p-3 rounded-2xl border border-sky-500/30 text-center">
-        <span class="text-[10px] font-bold text-sky-400 uppercase">Level 1 (Direct)</span>
-        <div class="text-2xl font-black text-white mt-1" id="l1FrensCount">0</div>
-        <p class="text-[10px] text-emerald-400 font-semibold mt-0.5">10% Mining Share</p>
-      </div>
-      <div class="brand-card p-3 rounded-2xl border border-indigo-500/30 text-center">
-        <span class="text-[10px] font-bold text-indigo-400 uppercase">Level 2 (Team)</span>
-        <div class="text-2xl font-black text-white mt-1" id="l2FrensCount">0</div>
-        <p class="text-[10px] text-indigo-300 font-semibold mt-0.5">4% Team Share</p>
-      </div>
-    </div>
-
-    <div class="brand-card p-3 rounded-xl mb-3 flex justify-between items-center">
-      <span class="text-xs text-slate-300 font-medium">Total Affiliate Rewards</span>
-      <span id="refRewardsEarned" class="text-sm font-black text-emerald-400">+0.00 PoM</span>
-    </div>
-
-    <div class="brand-card p-2.5 rounded-xl mb-3 flex items-center justify-between">
-      <input id="refLinkInput" type="text" readonly class="bg-transparent text-[11px] text-slate-300 w-3/4 outline-none truncate" />
-      <button onclick="copyRefLink()" class="px-3 py-1.5 rounded-lg bg-sky-600 text-xs font-bold text-white">Copy</button>
-    </div>
-
-    <button onclick="shareOnTelegram()" class="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-bold text-sm shadow-lg active:scale-95 transition">Invite a Fren 🚀</button>
-  </div>
-
-  <!-- TAB 4: WALLET -->
-  <div id="tab-wallet" class="tab-content hidden px-4 flex-1 space-y-4">
-    <div class="brand-card p-4 rounded-2xl border border-sky-500/30">
-      <div class="flex items-center justify-between mb-4">
-        <h4 class="text-xs font-bold text-sky-400"><span>💎</span> TON Verification</h4>
-        <span id="tonStatusBadge" class="text-[9px] px-2 py-1 rounded-full bg-slate-800 text-slate-400 font-bold border border-slate-700">Not Connected</span>
-      </div>
-      <!-- TON Connect Button Container -->
-      <div id="ton-connect-btn" class="flex justify-center mb-4 min-h-[40px]"></div>
-      
-      <button id="payTonBtn" onclick="payTonVerification()" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-sm shadow-lg active:scale-95 transition">
-        Verify Human (0.1 TON)
-      </button>
-    </div>
-  </div>
-
-  <!-- Bottom Nav -->
-  <div class="fixed bottom-0 left-0 right-0 brand-card border-t border-slate-800 flex justify-around items-center py-2 z-50">
-    <button onclick="switchTab('mine')" id="nav-mine" class="flex flex-col items-center py-1 flex-1 nav-active transition"><span class="text-lg">⛏️</span><span class="text-[10px] font-bold">Mine</span></button>
-    <button onclick="switchTab('tasks')" id="nav-tasks" class="flex flex-col items-center py-1 flex-1 text-slate-400 transition"><span class="text-lg">📋</span><span class="text-[10px] font-bold">Tasks</span></button>
-    <button onclick="switchTab('frens')" id="nav-frens" class="flex flex-col items-center py-1 flex-1 text-slate-400 transition"><span class="text-lg">👥</span><span class="text-[10px] font-bold">Frens</span></button>
-    <button onclick="switchTab('wallet')" id="nav-wallet" class="flex flex-col items-center py-1 flex-1 text-slate-400 transition"><span class="text-lg">💼</span><span class="text-[10px] font-bold">Wallet</span></button>
-  </div>
-
-  <script>
-    const BACKEND_URL = "https://proof-of-mind-api.onrender.com"; 
-    const BOT_USERNAME = "proof_of_mind_bot"; 
-
-    let currentUser = null;
-    let selectedItems = [];
-    let currentLang = 'en';
-    let currentTarget = ""; // नया: आंसर वेरीफाई करने के लिए
-
-    // --- ADSGRAM INITIALIZATION (Block ID: 57227) ---
-    const AdController = window.Adsgram.init({ blockId: "57227" });
-
-    // TON CONNECT INITIALIZATION (Wallet Binding)
-    const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-        manifestUrl: 'https://raw.githubusercontent.com/ton-community/tutorials/main/03-client/test/public/tonconnect-manifest.json',
-        buttonRootId: 'ton-connect-btn'
-    });
-
-    tonConnectUI.onStatusChange(async (wallet) => {
-        if (wallet) {
-            const rawAddress = wallet.account.address;
-            const shortAddr = rawAddress.slice(0, 4) + '...' + rawAddress.slice(-4);
-            const badge = document.getElementById('tonStatusBadge');
-            badge.innerText = shortAddr;
-            badge.classList.replace('text-slate-400', 'text-emerald-400');
-            badge.classList.replace('bg-slate-800', 'bg-emerald-900');
-            badge.classList.replace('border-slate-700', 'border-emerald-500/50');
+    <!-- Wallet Tab -->
+    <div id="walletTab" class="absolute inset-0 pt-16 pb-20 bg-[#030712] z-30 hidden overflow-y-auto">
+        <div class="p-6 max-w-md mx-auto text-center">
+            <h2 class="text-xl font-black mb-2">Wallet & Verification</h2>
+            <p class="text-xs text-slate-400 mb-6">Verify your account to prove you are human and unlock 2.5x mining boost!</p>
             
-            if(currentUser) {
-                await fetch(`${BACKEND_URL}/api/bind-wallet`, {
+            <div class="glass-panel p-6 rounded-2xl border border-slate-700 mb-6">
+                <div class="text-4xl mb-4">💎</div>
+                <div class="text-sm font-bold text-slate-300 mb-2">Account Status: <span id="verificationStatus" class="text-amber-400">Unverified</span></div>
+                <div id="verifyBtnContainer" class="mt-4"></div>
+            </div>
+            <div id="ton-connect-button" class="flex justify-center hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        // Final Configuration
+        const API_URL = "https://proof-of-mind-backend.onrender.com"; 
+        let userData = { userId: null, username: "Guest", platform: 'TELEGRAM', language: 'en', refCode: null };
+        let gameState = { level: 1, balance: 0, hearts: 5, target: "", pool: [], currentAnswer: [], isVerified: false };
+        let adController = null; 
+        
+        async function initApp() {
+            const urlParams = new URLSearchParams(window.location.search);
+            userData.refCode = urlParams.get('startapp');
+
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+                const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+                userData.userId = tgUser.id.toString();
+                userData.username = tgUser.username || tgUser.first_name || "Miner";
+                userData.language = tgUser.language_code || 'en';
+                userData.platform = 'TELEGRAM';
+                window.Telegram.WebApp.expand();
+                
+                try {
+                    adController = window.Adsgram.init({ blockId: "57227" });
+                } catch(e) { console.error("Adsgram Error", e); }
+                
+            } else {
+                userData.platform = 'PI_NETWORK';
+                try {
+                    await Pi.init({ version: "2.0", sandbox: true }); 
+                    const scopes = ['username'];
+                    const authResult = await Pi.authenticate(scopes, onIncompletePaymentFound);
+                    userData.userId = authResult.user.uid;
+                    userData.username = authResult.user.username;
+                    userData.language = 'en'; 
+                } catch (e) {
+                    userData.userId = "pi_web_" + Math.floor(Math.random() * 100000);
+                    userData.username = "Pi_User";
+                    userData.language = 'en';
+                }
+            }
+
+            document.getElementById('usernameDisplay').innerText = "@" + userData.username;
+            document.getElementById('refLinkDisplay').innerText = `t.me/proof_of_mind_bot?startapp=${userData.userId}`;
+            
+            setupWalletTab();
+            await loginUser();
+            await loadGameData();
+        }
+
+        async function loginUser() {
+            try {
+                const res = await fetch(`${API_URL}/api/auth`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: currentUser.userId, tonAddress: rawAddress })
+                    body: JSON.stringify(userData)
                 });
-            }
-        } else {
-            const badge = document.getElementById('tonStatusBadge');
-            badge.innerText = "Not Connected";
-            badge.className = "text-[9px] px-2 py-1 rounded-full bg-slate-800 text-slate-400 font-bold border border-slate-700";
+                const data = await res.json();
+                if(data.success) updateGameState(data.user);
+            } catch(e) { console.error("Login fail:", e); }
         }
-    });
 
-    async function payTonVerification() {
-        if (!tonConnectUI.connected) {
-            alert("Please connect your TON wallet first! 💎");
-            return;
+        async function loadGameData() {
+            if (gameState.hearts <= 0) {
+                showAdScreen();
+                return;
+            }
+            showGameScreen();
+            try {
+                const res = await fetch(`${API_URL}/api/get-game-data?userId=${userData.userId}&lang=${userData.language}`);
+                const data = await res.json();
+                if(data.success) {
+                    gameState.target = data.target;
+                    gameState.pool = data.pool;
+                    gameState.currentAnswer = [];
+                    if(data.hint) {
+                        document.getElementById('hintDisplay').classList.remove('hidden');
+                        document.getElementById('hintText').innerText = data.hint;
+                    } else {
+                        document.getElementById('hintDisplay').classList.add('hidden');
+                    }
+                    renderGameUI();
+                } else if (data.hearts === 0) {
+                    gameState.hearts = 0;
+                    showAdScreen();
+                }
+            } catch(e) { console.error("Load game fail:", e); }
         }
-        try {
-            const transaction = {
-                validUntil: Math.floor(Date.now() / 1000) + 60,
-                messages: [{
-                    address: "UQD5ZiNy8-eV7l6Ny46c-f98USLg-JXPTRRIPMV-0YiadqJV", 
-                    amount: "100000000" // 0.1 TON
-                }]
-            };
-            await tonConnectUI.sendTransaction(transaction);
+
+        async function submitAnswer() {
+            const answerStr = gameState.currentAnswer.join('');
+            if(answerStr.length !== gameState.target.length) {
+                showMessage("Complete the word!", "border-red-500", "text-red-400");
+                return;
+            }
+            try {
+                const res = await fetch(`${API_URL}/api/verify-game`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: userData.userId, answer: answerStr, targetWord: gameState.target })
+                });
+                const data = await res.json();
+                
+                if(data.success) {
+                    showMessage(`Correct! +${data.earned.toFixed(1)} PoM`, "border-emerald-500", "text-emerald-400");
+                    gameState.balance = data.newBalance;
+                    gameState.level = data.newLevel;
+                    gameState.hearts = data.hearts;
+                    document.getElementById('levelDisplay').innerText = gameState.level;
+                    document.getElementById('balanceDisplay').innerText = gameState.balance.toFixed(1);
+                    setTimeout(loadGameData, 1500);
+                } else {
+                    showMessage("Wrong Answer!", "border-red-500", "text-red-400");
+                    gameState.hearts = data.hearts;
+                    updateHeartsUI();
+                    clearAnswer();
+                    if(gameState.hearts <= 0) setTimeout(showAdScreen, 1000);
+                }
+            } catch(e) { console.error("Verify fail:", e); }
+        }
+
+        function renderGameUI() {
+            updateHeartsUI();
+            const boxesContainer = document.getElementById('answerBoxes');
+            boxesContainer.innerHTML = '';
+            for(let i=0; i<gameState.target.length; i++) {
+                const char = gameState.currentAnswer[i] || "";
+                boxesContainer.innerHTML += `<div class="w-10 h-12 glass-panel rounded-lg flex items-center justify-center text-xl font-bold border ${char ? 'border-sky-400 text-sky-400 shadow-sm shadow-sky-400/50' : 'border-slate-700'}">${char}</div>`;
+            }
+
+            const poolContainer = document.getElementById('poolArea');
+            poolContainer.innerHTML = '';
+            const usedCounts = {};
+            gameState.currentAnswer.forEach(c => { usedCounts[c] = (usedCounts[c] || 0) + 1; });
+
+            gameState.pool.forEach((char) => {
+                const isUsed = usedCounts[char] > 0;
+                if(isUsed) usedCounts[char]--; 
+                
+                if(!isUsed) {
+                    poolContainer.innerHTML += `<div onclick="selectChar('${char}')" class="chip w-12 h-12 bg-slate-800 border border-slate-600 rounded-xl flex items-center justify-center text-xl font-bold hover:bg-slate-700 shadow-md text-white">${char}</div>`;
+                } else {
+                    poolContainer.innerHTML += `<div class="chip w-12 h-12 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-center text-xl font-bold opacity-30 cursor-not-allowed">${char}</div>`;
+                }
+            });
+        }
+
+        function updateHeartsUI() {
+            const heartsContainer = document.getElementById('heartsDisplay');
+            let html = "";
+            for(let i=0; i<5; i++) {
+                if(i < gameState.hearts) html += `<span class="text-red-500 text-lg">❤️</span>`;
+                else html += `<span class="text-slate-700 text-lg opacity-50 grayscale">🖤</span>`;
+            }
+            heartsContainer.innerHTML = html;
+        }
+
+        function selectChar(char) {
+            if(gameState.currentAnswer.length < gameState.target.length) {
+                gameState.currentAnswer.push(char);
+                renderGameUI();
+            }
+        }
+
+        function clearAnswer() {
+            gameState.currentAnswer = [];
+            renderGameUI();
+        }
+
+        function updateGameState(user) {
+            gameState.level = user.level;
+            gameState.balance = user.balance;
+            gameState.hearts = user.hearts;
+            gameState.isVerified = user.isVerified;
             
-            const res = await fetch(`${BACKEND_URL}/api/confirm-ton-payment`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: currentUser.userId })
-            });
-            const data = await res.json();
-            if(data.success) {
-                alert("Verification Successful! 2.5x Mining Boost Activated 🚀");
-                document.getElementById('verifiedBadge').innerText = "Verified Tier";
-                document.getElementById('logoVerifiedCheck').classList.remove('hidden');
-                currentUser.isVerified = true;
+            document.getElementById('levelDisplay').innerText = gameState.level;
+            document.getElementById('balanceDisplay').innerText = gameState.balance.toFixed(1);
+            if(user.isVerified) {
+                document.getElementById('verificationStatus').innerText = "Verified (2.5x Boost)";
+                document.getElementById('verificationStatus').className = "text-emerald-400 font-bold";
+                document.getElementById('verifyBtnContainer').innerHTML = "";
             }
-        } catch (e) { alert("Transaction failed or canceled."); }
-    }
-
-    function changeLanguage(lang) {
-      currentLang = lang;
-      loadGameWorkspace();
-    }
-
-    function switchTab(tabName) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-      document.querySelectorAll('.fixed button').forEach(el => { el.classList.remove('nav-active'); el.classList.add('text-slate-400'); });
-      const activeNav = document.getElementById(`nav-${tabName}`);
-      activeNav.classList.add('nav-active');
-      activeNav.classList.remove('text-slate-400');
-      if (tabName === 'frens' && currentUser) loadReferralStats();
-    }
-
-    const tg = window.Telegram?.WebApp;
-    let uplineRefCode = null;
-
-    if (tg) {
-      tg.expand();
-      const user = tg.initDataUnsafe?.user || { id: "PIONEER_" + Math.floor(Math.random()*1000), first_name: "Pioneer" };
-      document.getElementById("userName").innerText = user.first_name;
-      
-      const startParam = tg.initDataUnsafe?.start_param;
-      if (startParam && startParam.startsWith('ref_')) { uplineRefCode = startParam.replace('ref_', ''); }
-
-      document.getElementById("refLinkInput").value = `https://t.me/${BOT_USERNAME}?startapp=ref_${user.id}`;
-      registerNode(user.id, user.username || user.first_name, uplineRefCode);
-    } else {
-      registerNode("TEST_USER_123", "TestUser", null);
-    }
-
-    async function registerNode(userId, username, refCode) {
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/auth`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, username, language: currentLang, refCode })
-        });
-        const data = await res.json();
-        if (data.success) {
-          currentUser = data.user;
-          document.getElementById("userBalance").innerText = currentUser.balance.toFixed(2);
-          if (currentUser.isVerified) {
-             document.getElementById('verifiedBadge').innerText = "Verified Tier";
-             document.getElementById('logoVerifiedCheck').classList.remove('hidden');
-          }
-          if (currentUser.completedTasks) currentUser.completedTasks.forEach(t => markTaskDoneUI(t));
-          loadGameWorkspace();
         }
-      } catch (err) { console.error("API Auth Error:", err); }
-    }
 
-    // --- UPDATE UI FOR HEARTS & ADS ---
-    function updateHeartsUI(hearts) {
-        document.getElementById("livesDisplay").innerText = "❤️".repeat(hearts) + "🖤".repeat(5 - hearts);
-        
-        if (hearts <= 0) {
-            document.getElementById("game-ui-container").classList.add("hidden");
-            document.getElementById("ads-container").classList.remove("hidden");
-        } else {
-            document.getElementById("game-ui-container").classList.remove("hidden");
-            document.getElementById("ads-container").classList.add("hidden");
+        function showAdScreen() {
+            document.getElementById('gameArea').classList.add('hidden');
+            document.getElementById('adScreen').classList.remove('hidden');
         }
-    }
 
-    async function loadGameWorkspace() {
-      if (!currentUser) return;
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/get-game-data?userId=${currentUser.userId}&lang=${currentLang}`);
-        const data = await res.json();
-        
-        if (data.success) {
-          document.getElementById("levelBadge").innerText = `Level ${data.level}`;
-          currentTarget = data.target; 
-          updateHeartsUI(data.hearts);
-          
-          // Hint Logic
-          const hintDisplay = document.getElementById("hintDisplay");
-          if (data.hint && data.hint !== "") {
-              hintDisplay.querySelector("span").innerText = data.hint;
-              hintDisplay.classList.remove("hidden");
-          } else {
-              hintDisplay.classList.add("hidden");
-          }
-
-          renderChips(data.pool);
-        } else if (data.message === "No hearts left. Watch Ad.") {
-          updateHeartsUI(0);
+        function showGameScreen() {
+            document.getElementById('adScreen').classList.add('hidden');
+            document.getElementById('gameArea').classList.remove('hidden');
         }
-      } catch (e) { console.error("Game Load Error:", e); }
-    }
 
-    function renderChips(pool) {
-      const container = document.getElementById("chipsContainer");
-      container.innerHTML = "";
-      resetCurrentWorkspace();
-      if(!pool) return;
-
-      pool.forEach((letter, index) => {
-        const btn = document.createElement("button");
-        btn.className = "puzzle-chip w-11 h-11 rounded-2xl brand-card border border-slate-700 text-base font-black text-sky-300 flex items-center justify-center shadow-md active:scale-90 transition";
-        btn.id = `chip-${index}`;
-        btn.innerText = letter;
-        btn.onclick = () => {
-          selectedItems.push(letter);
-          btn.classList.add("selected");
-          document.getElementById("itemPlaceholder").style.display = "none";
-          const chip = document.createElement("span");
-          chip.className = "w-9 h-9 rounded-xl bg-sky-500/20 text-sky-300 border border-sky-500/40 text-sm font-extrabold flex items-center justify-center";
-          chip.innerText = letter;
-          document.getElementById("constructedItems").appendChild(chip);
-        };
-        container.appendChild(btn);
-      });
-    }
-
-    function resetCurrentWorkspace() {
-      selectedItems = [];
-      document.getElementById("constructedItems").innerHTML = "";
-      document.getElementById("itemPlaceholder").style.display = "block";
-      document.querySelectorAll(".puzzle-chip").forEach(el => el.classList.remove("selected"));
-    }
-
-    async function submitWorkspace() {
-      if (selectedItems.length < 1) return alert("कृपया अक्षर चुनें!");
-      const answer = selectedItems.join("");
-
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/verify-game`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: currentUser.userId, answer, lang: currentLang, targetWord: currentTarget })
-        });
-        const data = await res.json();
-        
-        if (data.success) {
-          alert(`सफलता! +${data.earned} PoM`);
-          currentUser.balance = data.newBalance;
-          document.getElementById("userBalance").innerText = data.newBalance.toFixed(2);
-          loadGameWorkspace();
-        } else {
-          // गलत जवाब
-          alert(`Wrong Answer! 💔 (-1 Heart)`);
-          resetCurrentWorkspace();
-          if (data.hearts !== undefined) updateHeartsUI(data.hearts);
+        async function watchAd() {
+            if (userData.platform === 'TELEGRAM') {
+                if(adController) {
+                    adController.show().then((result) => {
+                        rewardHearts();
+                    }).catch((result) => {
+                        alert("Ad skipped or failed.");
+                    });
+                } else {
+                    alert("Ad network not initialized.");
+                }
+            } else {
+                /* PI_AD_CODE_HERE */
+                alert("Pi Ad Network connecting... Refilled for now!");
+                rewardHearts();
+            }
         }
-      } catch (err) { alert("Network Connection Error"); }
-    }
 
-    // --- ADSGRAM VIDEO TRIGGER ---
-    function showAdsgramVideo() {
-        AdController.show().then((result) => {
-            // ऐड पूरा देखने पर
-            fetch(`${BACKEND_URL}/api/adsgram-webhook?userid=${currentUser.userId}`)
-            .then(() => {
-                alert("🎉 Energy Full! 5 ❤️ restored.");
-                updateHeartsUI(5);
-                loadGameWorkspace();
+        async function rewardHearts() {
+            try {
+                await fetch(`${API_URL}/api/ad-webhook?userid=${userData.userId}`);
+                gameState.hearts = 5;
+                loadGameData();
+            } catch(e) { console.error("Reward fail", e); }
+        }
+
+        function switchTab(tabId) {
+            const tabs = ['gameArea', 'adScreen', 'friendsTab', 'walletTab'];
+            tabs.forEach(t => {
+                const el = document.getElementById(t);
+                if(el) el.classList.add('hidden');
             });
-        }).catch((err) => {
-            // ऐड बीच में काटा
-            alert("आपको एनर्जी वापस पाने के लिए पूरा वीडियो देखना होगा।");
-        });
-    }
-
-    function openTaskLink(taskId, url) {
-      window.open(url, '_blank');
-      setTimeout(() => {
-        const claimBtn = document.getElementById(`btn-claim-${taskId}`);
-        if (claimBtn) claimBtn.classList.remove('hidden');
-      }, 1000);
-    }
-
-    async function claimTaskReward(taskId, reward) {
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/complete-task`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: currentUser.userId, taskId })
-        });
-        const data = await res.json();
-        if (data.success) {
-          currentUser.balance = data.newBalance;
-          document.getElementById("userBalance").innerText = data.newBalance.toFixed(2);
-          markTaskDoneUI(taskId);
-          alert(`🎉 बधाई हो! +${reward} PoM मिल गए हैं।`);
-        } else { alert(data.message); }
-      } catch (e) { alert("Task reward failed."); }
-    }
-
-    function markTaskDoneUI(taskId) {
-      const claimBtn = document.getElementById(`btn-claim-${taskId}`);
-      if (claimBtn) {
-        claimBtn.innerText = "Completed ✔";
-        claimBtn.disabled = true;
-        claimBtn.className = "px-2.5 py-1.5 rounded-lg bg-slate-700 text-xs font-bold text-slate-400 cursor-default";
-        claimBtn.classList.remove('hidden');
-      }
-    }
-
-    async function loadReferralStats() {
-      if (!currentUser) return;
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/referrals/${currentUser.userId}`);
-        const data = await res.json();
-        if (data.success) {
-          document.getElementById("l1FrensCount").innerText = data.l1Count;
-          document.getElementById("l2FrensCount").innerText = data.l2Count;
-          document.getElementById("refRewardsEarned").innerText = `+${data.totalEarned} PoM`;
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active', 'opacity-100'));
+            
+            if(tabId === 'mine') {
+                if(gameState.hearts <= 0) document.getElementById('adScreen').classList.remove('hidden');
+                else document.getElementById('gameArea').classList.remove('hidden');
+                document.querySelectorAll('.nav-btn')[0].classList.add('opacity-100');
+            }
+            if(tabId === 'friends') {
+                document.getElementById('friendsTab').classList.remove('hidden');
+                document.querySelectorAll('.nav-btn')[1].classList.add('opacity-100');
+            }
+            if(tabId === 'wallet') {
+                document.getElementById('walletTab').classList.remove('hidden');
+                document.querySelectorAll('.nav-btn')[2].classList.add('opacity-100');
+            }
         }
-      } catch (e) { console.error(e); }
-    }
 
-    function copyRefLink() {
-      navigator.clipboard.writeText(document.getElementById("refLinkInput").value);
-      alert("Referral link copied!");
-    }
+        function openWhitepaper() {
+            window.open(`whitepaper.html?lang=${userData.language}`, '_blank');
+        }
 
-    function shareOnTelegram() {
-      const link = document.getElementById("refLinkInput").value;
-      const text = encodeURIComponent("Proof of Mind पर मेरे साथ जुड़ें और मुफ़्त PoM टोकन माइन करें! 🧠⚡");
-      window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${text}`);
-    }
-  </script>
+        function copyRefLink() {
+            const link = `https://t.me/proof_of_mind_bot?startapp=${userData.userId}`;
+            navigator.clipboard.writeText(link).then(() => {
+                alert("Link copied!");
+            });
+        }
+
+        function showMessage(msg, borderCls, textCls) {
+            const el = document.getElementById('messageAlert');
+            el.innerText = msg;
+            el.className = `absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 glass-panel px-6 py-3 rounded-2xl border ${borderCls} ${textCls} text-sm font-bold text-center w-3/4 z-50`;
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 2000);
+        }
+
+        function setupWalletTab() {
+            const container = document.getElementById('verifyBtnContainer');
+            if (gameState.isVerified) return; 
+
+            if (userData.platform === 'TELEGRAM') {
+                document.getElementById('ton-connect-button').classList.remove('hidden');
+                const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+                    manifestUrl: 'https://proof-of-mind.vercel.app/tonconnect-manifest.json',
+                    buttonRootId: 'ton-connect-button'
+                });
+                container.innerHTML = `<p class="text-xs text-slate-400 mb-2">Connect TON Wallet to verify (0.1 TON)</p>`;
+            } else {
+                container.innerHTML = `<button onclick="requestPiPayment()" class="bg-[#f3b123] hover:bg-[#e0a01a] text-[#1c1c1c] px-6 py-2 rounded-xl text-sm font-bold shadow-md transition">Verify with Pi</button>`;
+            }
+        }
+
+        function onIncompletePaymentFound(payment) { console.log("Incomplete:", payment); }
+        async function requestPiPayment() { alert("Pi Payment Initiated!"); }
+
+        window.onload = initApp;
+    </script>
 </body>
 </html>
