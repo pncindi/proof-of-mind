@@ -3,79 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PoM - Admin Dashboard</title>
+    <title>Proof of Mind - Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style> body { background: #0f172a; color: #f8fafc; font-family: system-ui; } .card { background: #1e293b; padding: 1rem; border-radius: 0.5rem; } </style>
 </head>
-<body class="p-6">
-    <div id="loginScreen" class="max-w-sm mx-auto mt-20 card text-center">
-        <h2 class="text-2xl font-bold text-sky-400 mb-4">Admin Login</h2>
-        <input type="password" id="adminPass" placeholder="Enter Secret Password" class="w-full bg-slate-900 border border-slate-700 p-2 rounded mb-4 text-white">
-        <button onclick="loginAdmin()" class="bg-indigo-600 w-full py-2 rounded font-bold">Login</button>
-    </div>
-
-    <div id="dashboard" class="max-w-4xl mx-auto hidden">
-        <h1 class="text-3xl font-black mb-6 flex justify-between">Control Panel <button onclick="location.reload()" class="text-sm bg-red-600 px-3 rounded">Logout</button></h1>
+<body class="bg-slate-950 text-slate-100 p-6">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-black mb-6 text-sky-400">🛡️ Proof of Mind Admin Dashboard</h1>
         
-        <div class="grid grid-cols-3 gap-4 mb-8">
-            <div class="card border-t-4 border-sky-500">
-                <p class="text-slate-400 text-sm">Total Users</p><h2 id="totUsers" class="text-3xl font-bold">0</h2>
-            </div>
-            <div class="card border-t-4 border-emerald-500">
-                <p class="text-slate-400 text-sm">Verified (0.1 TON/Pi)</p><h2 id="verUsers" class="text-3xl font-bold">0</h2>
-            </div>
-            <div class="card border-t-4 border-amber-500">
-                <p class="text-slate-400 text-sm">Total Mined (PoM)</p><h2 id="totMined" class="text-3xl font-bold">0</h2>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-6">
-            <div class="card">
-                <h3 class="text-lg font-bold mb-4 text-indigo-400">Set Level Hint / Word</h3>
-                <input type="number" id="hLevel" placeholder="Level Number" class="w-full bg-slate-900 p-2 rounded mb-2">
-                <select id="hLang" class="w-full bg-slate-900 p-2 rounded mb-2"><option value="en">English</option><option value="hi">Hindi</option></select>
-                <input type="text" id="hWord" placeholder="Custom Word" class="w-full bg-slate-900 p-2 rounded mb-2 uppercase">
-                <input type="text" id="hHint" placeholder="Hint Text" class="w-full bg-slate-900 p-2 rounded mb-4">
-                <button onclick="setHint()" class="bg-emerald-600 w-full py-2 rounded font-bold">Save Setting</button>
-            </div>
-            
-            <div class="card">
-                <h3 class="text-lg font-bold mb-4 text-sky-400">Top 10 Leaders (Referrals)</h3>
-                <div id="leaderList" class="text-sm space-y-2"></div>
-            </div>
+        <!-- Task Management Section -->
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl mb-6">
+            <h2 class="text-xl font-bold mb-4">Manage Social Tasks</h2>
+            <div id="adminTasksList" class="flex flex-col gap-3 mb-4"></div>
         </div>
     </div>
 
     <script>
-        const API_URL = "https://proof-of-mind-backend.onrender.com"; 
-        let pwd = "";
+        const API_URL = "https://proof-of-mind-api.onrender.com";
 
-        async function loginAdmin() {
-            pwd = document.getElementById('adminPass').value;
-            const res = await fetch(`${API_URL}/api/admin/stats`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({password: pwd}) });
+        async function loadAdminTasks() {
+            const res = await fetch(`${API_URL}/api/tasks`);
             const data = await res.json();
             if(data.success) {
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('dashboard').classList.remove('hidden');
-                document.getElementById('totUsers').innerText = data.totalUsers;
-                document.getElementById('verUsers').innerText = data.verifiedUsers;
-                document.getElementById('totMined').innerText = data.totalMined.toFixed(0);
-                
-                document.getElementById('leaderList').innerHTML = data.topLeaders.map(l => 
-                    `<div class="flex justify-between bg-slate-900 p-2 rounded"><span>@${l.username}</span><span class="text-emerald-400">${l.referralCountL1} Refs</span></div>`
-                ).join('');
-            } else { alert("Wrong Password!"); }
+                document.getElementById('adminTasksList').innerHTML = data.tasks.map(t => `
+                    <div class="flex justify-between items-center bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <span>${t.icon} <b>${t.title}</b> (${t.reward} PoM)</span>
+                        <span class="text-xs text-sky-400 truncate max-w-xs">${t.url}</span>
+                    </div>
+                `).join('');
+            }
         }
-
-        async function setHint() {
-            const body = {
-                password: pwd, level: document.getElementById('hLevel').value, lang: document.getElementById('hLang').value,
-                targetWord: document.getElementById('hWord').value.toUpperCase(), hint: document.getElementById('hHint').value
-            };
-            const res = await fetch(`${API_URL}/api/admin/set-hint`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
-            const data = await res.json();
-            alert(data.message || "Failed");
-        }
+        loadAdminTasks();
     </script>
 </body>
 </html>
