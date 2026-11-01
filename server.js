@@ -1,20 +1,29 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const TelegramBot = require('node-telegram-bot-api'); // <-- Telegram Bot Package
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Database & Admin Setup
+// ==========================================
+// CONFIGURATIONS (डेटाबेस और बोट सेटिंग्स)
+// ==========================================
 const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://pncindi:pnc_password@cluster0.mongodb.net/proof-of-mind?retryWrites=true&w=majority";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "pnc_admin_123";
 
+// ⚠️ ध्यान दें: यहाँ अपना असली Bot Token और Vercel URL डालें (अगर Render Env में सेट नहीं है)
+const BOT_TOKEN = process.env.BOT_TOKEN || "यहाँ_अपना_BOT_TOKEN_डालें"; 
+const WEB_APP_URL = process.env.WEB_APP_URL || "https://proof-of-mind.vercel.app"; 
+
+// ==========================================
+// 1. DATABASE CONNECTION & SCHEMAS
+// ==========================================
 mongoose.connect(MONGO_URI)
   .then(() => console.log("MongoDB connected successfully"))
   .catch(err => console.error("MongoDB Error:", err));
 
-// Schemas
 const UserSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true },
   platform: { type: String, default: 'TELEGRAM' },
@@ -47,16 +56,41 @@ const AdminData = mongoose.model('AdminData', AdminDataSchema);
 const BASE_DICTIONARY = {
   en: ["TON", "MIND", "COIN", "NODE", "PROOF", "BLOCK", "SMART", "TOKEN", "CRYPTO", "FUTURE", "SECURE", "NETWORK"],
   hi: ["मन", "धन", "टन", "ज्ञान", "सत्य", "शक्ति", "चेतना", "प्रकाश", "विचार", "बुद्धि", "तंत्र", "क्रांति"],
-  vi: ["TÂM", "KHỐI", "ĐỒNG", "TRÍ", "TIỀN", "MINH", "THỰC", "MẠNG", "XÍCH"],
-  id: ["AKAL", "NODE", "KOIN", "BLOK", "PIKIR", "RANTAI", "PINTAR", "KRIPTO"],
-  zh: ["心灵", "节点", "代币", "区块", "密码", "智能", "未来", "公链"],
-  bn: ["মন", "জ্ঞান", "সত্য", "শক্তি", "চেतना", "আলো", "চিন্তা", "বুদ্ধি"],
-  ar: ["عقل", "نود", "كتلة", "شبكة", "عملة", "فكر", "سلسلة", "تشفير"],
-  ru: ["УМ", "УЗЕЛ", "БЛОК", "СЕТЬ", "ЦЕПЬ", "МОЗГ", "ТОКЕН", "РАЗУМ"],
-  es: ["MENTE", "NODO", "BLOQUE", "CADENA", "FUTURO", "TOKEN", "SEGURA"]
+  vi: ["TÂM", "KHỐI", "ĐỒNG", "TRÍ", "TIỀN", "MINH", "THỰC", "MẠNG", "XÍCH"]
 };
 
-// 1. GAME & AUTH APIs
+// ==========================================
+// 2. TELEGRAM BOT LOGIC (/start Command)
+// ==========================================
+if (BOT_TOKEN !== "यहाँ_अपना_BOT_TOKEN_डालें") {
+    const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+
+    bot.onText(/\/start(?: (.+))?/, (msg, match) => {
+        const chatId = msg.chat.id;
+        const refCode = match[1] || ""; // Referral ID कैप्चर करना
+
+        const welcomeText = `🧠 Welcome to Proof of Mind (PoM)!\n\nMine tokens, crack words, and join the decentralized Web3 ecosystem. Tap the button below to start!`;
+        
+        // डायनामिक URL (रेफरल के साथ)
+        const appUrl = refCode ? `${WEB_APP_URL}?startapp=${refCode}` : WEB_APP_URL;
+
+        const opts = {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: "🎮 Play & Mine PoM", web_app: { url: appUrl } }]
+                ]
+            }
+        };
+        bot.sendMessage(chatId, welcomeText, opts);
+    });
+    console.log("Telegram Bot started successfully.");
+} else {
+    console.log("⚠️ BOT_TOKEN is missing! Telegram bot is not running.");
+}
+
+// ==========================================
+// 3. API ROUTES (GAME, AUTH, ADMIN)
+// ==========================================
 app.post('/api/auth', async (req, res) => {
   try {
     const { userId, platform, username, language, refCode } = req.body;
@@ -154,7 +188,6 @@ app.post('/api/verify-game', async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// 2. ADS & WALLET APIs
 app.get('/api/ad-webhook', async (req, res) => {
     try {
         await User.findOneAndUpdate({ userId: req.query.userid }, { hearts: 5 });
@@ -162,21 +195,6 @@ app.get('/api/ad-webhook', async (req, res) => {
     } catch (err) { res.status(500).send("Server Error"); }
 });
 
-app.post('/api/bind-wallet', async (req, res) => {
-  try {
-    await User.findOneAndUpdate({ userId: req.body.userId }, { walletAddress: req.body.address });
-    res.json({ success: true });
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-app.post('/api/confirm-payment', async (req, res) => {
-  try {
-    await User.findOneAndUpdate({ userId: req.body.userId }, { isVerified: true });
-    res.json({ success: true });
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-// 3. ADMIN APIs
 app.post('/api/admin/stats', async (req, res) => {
     try {
         if (req.body.password !== ADMIN_PASSWORD) return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -186,14 +204,6 @@ app.post('/api/admin/stats', async (req, res) => {
         const totalMined = result.length > 0 ? result[0].totalMined : 0;
         const topLeaders = await User.find().sort({ referralCountL1: -1 }).limit(10).select('username userId platform referralCountL1 balance');
         res.json({ success: true, totalUsers, verifiedUsers, totalMined, topLeaders });
-    } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-app.post('/api/admin/set-hint', async (req, res) => {
-    try {
-        if (req.body.password !== ADMIN_PASSWORD) return res.status(401).json({ success: false, message: "Unauthorized" });
-        await AdminData.findOneAndUpdate({ level: req.body.level, lang: req.body.lang }, { targetWord: req.body.targetWord, hint: req.body.hint }, { upsert: true, new: true });
-        res.json({ success: true, message: "Saved successfully." });
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
