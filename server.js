@@ -1,237 +1,163 @@
 const express = require('express');
-const cors = require('cors');
 const mongoose = require('mongoose');
-const TelegramBot = require('node-telegram-bot-api');
+const cors = require('cors');
 
 const app = express();
-app.use(cors());
 app.use(express.json());
+app.use(cors());
 
-// ==========================================
-// CONFIGURATIONS (सिक्योर Environment Variables)
-// ==========================================
-// ⚠️ अब यहाँ कोई असली पासवर्ड या टोकन नहीं है। GitHub कोई एरर नहीं देगा।
-// ये सभी डिटेल्स Render खुद Environment Variables से उठा लेगा।
-const MONGO_URI = process.env.MONGO_URI;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-const BOT_TOKEN = process.env.BOT_TOKEN; 
-const WEB_APP_URL = process.env.WEB_APP_URL || "https://proof-of-mind.vercel.app"; 
+// MongoDB Connection (Render Environment Variables से कनेक्ट होगा)
+const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/proof-of-mind";
+mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log("MongoDB Connected Successfully"))
+    .catch(err => console.log("MongoDB Connection Error:", err));
 
-// ==========================================
-// 1. DATABASE CONNECTION & SCHEMAS
-// ==========================================
-if (MONGO_URI) {
-  mongoose.connect(MONGO_URI)
-    .then(() => console.log("MongoDB connected successfully"))
-    .catch(err => console.error("MongoDB Error:", err));
-} else {
-  console.error("⚠️ MONGO_URI is missing! Please set it in Render Environment Variables.");
-}
-
-const UserSchema = new mongoose.Schema({
-  userId: { type: String, required: true, unique: true },
-  platform: { type: String, default: 'TELEGRAM' },
-  username: String,
-  language: { type: String, default: 'en' },
-  level: { type: Number, default: 1 }, 
-  balance: { type: Number, default: 0 },
-  isVerified: { type: Boolean, default: false },
-  walletAddress: { type: String, default: "" },
-  referredBy: { type: String, default: null },
-  level2Upline: { type: String, default: null },
-  referralCountL1: { type: Number, default: 0 },
-  referralCountL2: { type: Number, default: 0 },
-  refRewardsEarned: { type: Number, default: 0 },
-  completedTasks: { type: [String], default: [] },
-  hearts: { type: Number, default: 5 },
-  hardMode: { type: Boolean, default: false }
-}, { timestamps: true });
-
-const User = mongoose.model('User', UserSchema);
-
-const AdminDataSchema = new mongoose.Schema({
-    level: { type: Number, required: true },
-    lang: { type: String, required: true },
-    targetWord: { type: String, required: true },
-    hint: { type: String, default: "" }
+// Database Schemas
+const userSchema = new mongoose.Schema({
+    userId: { type: String, unique: true, required: true },
+    username: String,
+    platform: String,
+    language: { type: String, default: 'en' },
+    balance: { type: Number, default: 0 },
+    level: { type: Number, default: 1 },
+    hearts: { type: Number, default: 5 },
+    isVerified: { type: Boolean, default: false },
+    completedTasks: { type: Array, default: [] },
+    referralCountL1: { type: Number, default: 0 },
+    referralCountL2: { type: Number, default: 0 },
+    referredBy: { type: String, default: null }
 });
-const AdminData = mongoose.model('AdminData', AdminDataSchema);
+const User = mongoose.model('User', userSchema);
 
-const BASE_DICTIONARY = {
-  en: ["TON", "MIND", "COIN", "NODE", "PROOF", "BLOCK", "SMART", "TOKEN", "CRYPTO", "FUTURE", "SECURE", "NETWORK"],
-  hi: ["मन", "धन", "टन", "ज्ञान", "सत्य", "शक्ति", "चेतना", "प्रकाश", "विचार", "बुद्धि", "तंत्र", "क्रांति"],
-  vi: ["TÂM", "KHỐI", "ĐỒNG", "TRÍ", "TIỀN", "MINH", "THỰC", "MẠNG", "XÍCH"]
-};
+const taskSchema = new mongoose.Schema({
+    taskId: { type: String, unique: true },
+    title: String,
+    url: String,
+    reward: { type: Number, default: 50 },
+    icon: String
+});
+const Task = mongoose.model('Task', taskSchema);
 
-// ==========================================
-// 2. TELEGRAM BOT LOGIC (/start Command)
-// ==========================================
-if (BOT_TOKEN) {
-    const bot = new TelegramBot(BOT_TOKEN, { polling: true });
-
-    bot.onText(/\/start(?: (.+))?/, (msg, match) => {
-        const chatId = msg.chat.id;
-        const refCode = match[1] || ""; // Referral ID कैप्चर
-
-        const welcomeText = `🧠 Welcome to Proof of Mind (PoM)!\n\nMine tokens, crack words, and join the decentralized Web3 ecosystem. Tap the button below to start!`;
-        
-        // डायनामिक URL (रेफरल के साथ)
-        const appUrl = refCode ? `${WEB_APP_URL}?startapp=${refCode}` : WEB_APP_URL;
-
-        const opts = {
-            reply_markup: {
-                inline_keyboard: [
-                    [{ text: "🎮 Play & Mine PoM", web_app: { url: appUrl } }]
-                ]
-            }
-        };
-        bot.sendMessage(chatId, welcomeText, opts);
-    });
-    console.log("Telegram Bot started successfully.");
-} else {
-    console.log("⚠️ BOT_TOKEN is missing! Telegram bot is not running.");
+// Default Tasks Setup
+async function seedDefaultTasks() {
+    const count = await Task.countDocuments();
+    if (count === 0) {
+        await Task.insertMany([
+            { taskId: 'yt', title: 'YouTube', url: 'https://youtube.com/@proofofmind', reward: 50, icon: '📺' },
+            { taskId: 'x', title: 'X (Twitter)', url: 'https://x.com/proofofmind', reward: 50, icon: '🐦' },
+            { taskId: 'tg', title: 'Telegram', url: 'https://t.me/proofofmind', reward: 50, icon: '✈️' },
+            { taskId: 'fb', title: 'Facebook', url: 'https://facebook.com/proofofmind', reward: 50, icon: '📘' }
+        ]);
+    }
 }
+seedDefaultTasks();
 
-// ==========================================
-// 3. API ROUTES (GAME, AUTH, ADMIN)
-// ==========================================
+// 1. Auth & Login API
 app.post('/api/auth', async (req, res) => {
-  try {
-    const { userId, platform, username, language, refCode } = req.body;
-    let user = await User.findOne({ userId });
+    try {
+        const { userId, username, platform, language, refCode } = req.body;
+        let user = await User.findOne({ userId });
 
-    if (!user) {
-      let l1Leader = null, l2Leader = null;
-      if (refCode && refCode !== userId) {
-        const directUpline = await User.findOne({ userId: refCode });
-        if (directUpline) {
-          l1Leader = directUpline.userId;
-          directUpline.referralCountL1 += 1;
-          await directUpline.save();
-          if (directUpline.referredBy) {
-            const secondUpline = await User.findOne({ userId: directUpline.referredBy });
-            if (secondUpline) {
-              l2Leader = secondUpline.userId;
-              secondUpline.referralCountL2 += 1;
-              await secondUpline.save();
+        if (!user) {
+            user = new User({ userId, username, platform, language: language || 'en', referredBy: refCode || null });
+            await user.save();
+
+            // Handle Referrals (L1 & L2)
+            if (refCode) {
+                let l1User = await User.findOne({ userId: refCode });
+                if (l1User) {
+                    l1User.referralCountL1 += 1;
+                    l1User.balance += 10; // Bonus for referral
+                    await l1User.save();
+
+                    if (l1User.referredBy) {
+                        let l2User = await User.findOne({ userId: l1User.referredBy });
+                        if (l2User) {
+                            l2User.referralCountL2 += 1;
+                            l2User.balance += 4;
+                            await l2User.save();
+                        }
+                    }
+                }
             }
-          }
         }
-      }
-      user = new User({ userId, platform: platform || 'TELEGRAM', username, language: language || 'en', referredBy: l1Leader, level2Upline: l2Leader });
-      await user.save();
+        res.json({ success: true, user });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
     }
-    res.json({ success: true, user });
-  } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+// 2. Get Dynamic Tasks API
+app.get('/api/tasks', async (req, res) => {
+    try {
+        const tasks = await Task.find();
+        res.json({ success: true, tasks });
+    } catch (e) {
+        res.status(500).json({ success: false });
+    }
+});
+
+// 3. Game Data API (Word & Quiz Levels)
 app.get('/api/get-game-data', async (req, res) => {
-  try {
-    const { userId, lang } = req.query;
-    const user = await User.findOne({ userId });
-    const currentLang = BASE_DICTIONARY[lang] ? lang : 'en';
+    try {
+        const { userId, type } = req.query; // type: 'word' or 'quiz'
+        const user = await User.findOne({ userId });
+        if (!user || user.hearts <= 0) return res.json({ success: false, hearts: 0 });
 
-    if (!user) return res.status(404).json({ success: false });
-    if (user.hearts <= 0) return res.json({ success: false, message: "No hearts left. Watch Ad.", hearts: 0 });
+        // Sample Word and Quiz banks based on level
+        const sampleWords = ["PI", "MINING", "TON", "BLOCK", "CRYPTO", "WEB", "FUTURE", "NODE", "MIND", "PROOF"];
+        const target = sampleWords[(user.level - 1) % sampleWords.length];
+        const pool = (target + "ABCDE").split('').sort(() => Math.random() - 0.5);
 
-    let targetWord = "";
-    let hint = "";
-    const adminData = await AdminData.findOne({ level: user.level, lang: currentLang });
-    
-    if (adminData) {
-        targetWord = adminData.targetWord;
-        hint = adminData.hint;
-    } else {
-        const wordList = BASE_DICTIONARY[currentLang];
-        targetWord = wordList[(user.level - 1) % wordList.length];
+        res.json({ success: true, target, pool, level: user.level, hearts: user.hearts });
+    } catch (e) {
+        res.status(500).json({ success: false });
     }
-
-    let totalChips = 5 + Math.floor((user.level - 1) / 10); 
-    let letterPool = targetWord.split('');
-    const extraChars = currentLang === 'hi' ? "अआइईउऊएऐओऔकखगघचछजझटठडढतथदधनपफबभमयरलवशषसह" : "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    
-    while (letterPool.length < Math.max(totalChips, targetWord.length)) {
-      letterPool.push(extraChars[Math.floor(Math.random() * extraChars.length)]);
-    }
-    letterPool.sort(() => Math.random() - 0.5);
-
-    res.json({ success: true, level: user.level, hearts: user.hearts, target: targetWord, pool: letterPool, hint: hint, reward: 10 + (user.level * 2) });
-  } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+// 4. Verify Game Answer API (Level Reward +1 PoM formula, Double if Verified)
 app.post('/api/verify-game', async (req, res) => {
-  try {
-    const { userId, answer, targetWord } = req.body;
-    const user = await User.findOne({ userId });
-    
-    if (!user || user.hearts <= 0) return res.json({ success: false, message: "No hearts left." });
+    try {
+        const { userId, isCorrect } = req.body;
+        let user = await User.findOne({ userId });
+        if (!user || user.hearts <= 0) return res.json({ success: false, hearts: 0 });
 
-    if (answer.trim().toUpperCase() === targetWord.toUpperCase()) {
-      const multiplier = user.isVerified ? 2.5 : 1.0;
-      const earned = (10 + (user.level * 2)) * multiplier;
+        let baseReward = user.level + 2; // Level 1 = 3 PoM, Level 2 = 4 PoM, etc.
+        if (user.isVerified) baseReward *= 2; // 100% Boost after 0.3 TON verification
 
-      user.balance += earned;
-      user.level += 1;
-      if (user.level > 100) { user.hardMode = true; }
-      await user.save();
-
-      if (user.referredBy) {
-        const l1 = await User.findOne({ userId: user.referredBy });
-        if (l1) { l1.balance += earned * 0.10; l1.refRewardsEarned += earned * 0.10; await l1.save(); }
-      }
-      if (user.level2Upline) {
-        const l2 = await User.findOne({ userId: user.level2Upline });
-        if (l2) { l2.balance += earned * 0.04; l2.refRewardsEarned += earned * 0.04; await l2.save(); }
-      }
-      res.json({ success: true, earned, newBalance: user.balance, newLevel: user.level, hearts: user.hearts });
-    } else {
-      user.hearts = Math.max(0, user.hearts - 1);
-      await user.save();
-      res.json({ success: false, message: "Wrong Answer!", hearts: user.hearts });
+        if (isCorrect) {
+            user.balance += baseReward;
+            user.level += 1;
+            await user.save();
+            return res.json({ success: true, earned: baseReward, newBalance: user.balance, newLevel: user.level, hearts: user.hearts });
+        } else {
+            user.hearts -= 1;
+            await user.save();
+            return res.json({ success: false, hearts: user.hearts });
+        }
+    } catch (e) {
+        res.status(500).json({ success: false });
     }
-  } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-app.get('/api/ad-webhook', async (req, res) => {
+// 5. Ad Webhook (Refill Hearts: 1 ad = 2 hearts, 2 ads = 5 hearts)
+app.get('/api/ad-reward', async (req, res) => {
     try {
-        await User.findOneAndUpdate({ userId: req.query.userid }, { hearts: 5 });
-        res.status(200).send("Success"); 
-    } catch (err) { res.status(500).send("Server Error"); }
+        const { userId, count } = req.query; // count = 1 or 2
+        let user = await User.findOne({ userId });
+        if (user) {
+            user.hearts = (count == '2') ? 5 : Math.min(5, user.hearts + 2);
+            await user.save();
+            return res.json({ success: true, hearts: user.hearts });
+        }
+        res.json({ success: false });
+    } catch(e) { res.status(500).json({ success: false }); }
 });
 
-app.post('/api/bind-wallet', async (req, res) => {
-  try {
-    await User.findOneAndUpdate({ userId: req.body.userId }, { walletAddress: req.body.address });
-    res.json({ success: true });
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-app.post('/api/confirm-payment', async (req, res) => {
-  try {
-    await User.findOneAndUpdate({ userId: req.body.userId }, { isVerified: true });
-    res.json({ success: true });
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-app.post('/api/admin/stats', async (req, res) => {
-    try {
-        if (!ADMIN_PASSWORD || req.body.password !== ADMIN_PASSWORD) return res.status(401).json({ success: false, message: "Unauthorized" });
-        const totalUsers = await User.countDocuments();
-        const verifiedUsers = await User.countDocuments({ isVerified: true });
-        const result = await User.aggregate([{ $group: { _id: null, totalMined: { $sum: "$balance" } } }]);
-        const totalMined = result.length > 0 ? result[0].totalMined : 0;
-        const topLeaders = await User.find().sort({ referralCountL1: -1 }).limit(10).select('username userId platform referralCountL1 balance');
-        res.json({ success: true, totalUsers, verifiedUsers, totalMined, topLeaders });
-    } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-app.post('/api/admin/set-hint', async (req, res) => {
-    try {
-        if (!ADMIN_PASSWORD || req.body.password !== ADMIN_PASSWORD) return res.status(401).json({ success: false, message: "Unauthorized" });
-        await AdminData.findOneAndUpdate({ level: req.body.level, lang: req.body.lang }, { targetWord: req.body.targetWord, hint: req.body.hint }, { upsert: true, new: true });
-        res.json({ success: true, message: "Saved successfully." });
-    } catch (error) { res.status(500).json({ error: error.message }); }
+// 6. TGE Auto-Withdrawal Placeholder
+app.post('/api/withdraw', async (req, res) => {
+    res.json({ success: false, message: "Auto-withdrawal will be activated during TGE Phase! 🚀" });
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`PoM Server on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
