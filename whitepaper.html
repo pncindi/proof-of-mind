@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proof of Mind - Whitepaper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style> body { background: radial-gradient(circle at top, #111827, #030712); color: #f8fafc; font-family: system-ui, sans-serif; } .card { background: rgba(30,41,59,0.5); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px); margin-bottom:1rem; padding:1.25rem; border-radius:1rem; } </style>
+</head>
+<body class="p-6 max-w-2xl mx-auto pb-20">
+    <div class="flex justify-between items-center mb-8 border-b border-slate-700 pb-4">
+        <h1 class="text-2xl font-black text-white flex items-center gap-2">🧠 Proof of Mind</h1>
+        <select id="langSelect" onchange="changeLang(this.value)" class="bg-slate-800 text-sky-400 font-bold px-3 py-1 rounded border border-slate-700">
+            <option value="en">English</option><option value="hi">हिन्दी</option>
+        </select>
+    </div>
+    <div id="content"></div>
+    <script>
+        const wp = {
+            en: [
+                {t: "1. Our Vision", d: "Proof of Mind (PoM) is a decentralized Web3 ecosystem rewarding true 'Human Intelligence'. A bridge between gaming and real-world utility."},
+                {t: "2. Decentralized Leadership", d: "The community is the core. Top-performing users who mine honestly and bring active referrals will be officially selected to join the Core Team."},
+                {t: "3. Tokenomics (1 Billion PoM)", d: "Network: TON / BSC (Pi Bridge future)<br><br>⛏️ 40% (400M): Community Rewards<br>👨‍💻 15% (150M): Founder & Dev<br>💧 15% (150M): Liquidity & Pi Bridge<br>🛍️ 10% (100M): Utility & Partnerships<br>💼 10% (100M): Investors<br>👥 10% (100M): Community Core Team"},
+                {t: "4. Token Utility", d: "Tokens are meant to be spent. Partnerships with Zepto, Swiggy, and utility bill providers will allow users to pay for real-world services using PoM."},
+                {t: "5. Burning Mechanism", d: "Every Pi Bridge transaction and real-world utility payment will automatically burn 1% to 2% of the tokens forever."}
+            ],
+            hi: [
+                {t: "1. हमारा विज़न", d: "Proof of Mind (PoM) एक पूरी तरह से डिसेंट्रलाइज्ड Web3 इकोसिस्टम है। लक्ष्य बॉट्स को हटाकर असली 'मानव बुद्धि' को रिवॉर्ड करना है।"},
+                {t: "2. कम्युनिटी ही कोर टीम है", d: "जो यूज़र्स सबसे अच्छा परफॉरमेंस देंगे, ईमानदारी से माइनिंग करेंगे, उन्हें चुनकर 'Official Core Team' में शामिल किया जाएगा।"},
+                {t: "3. टोकनॉमिक्स (1 बिलियन PoM)", d: "नेटवर्क: TON / BSC (भविष्य में Pi Bridge)<br><br>⛏️ 40% (400M): कम्युनिटी माइनिंग<br>👨‍💻 15% (150M): फाउंडर (आप)<br>💧 15% (150M): लिक्विडिटी / Pi Bridge<br>🛍️ 10% (100M): यूटिलिटी (Zepto आदि)<br>💼 10% (100M): इन्वेस्टर्स<br>👥 10% (100M): कम्युनिटी कोर टीम"},
+                {t: "4. टोकन यूटिलिटी", d: "Zepto और बिल पेमेंट सर्विस के साथ API पार्टनरशिप होगी, ताकि यूज़र्स PoM टोकन से सर्विसेस खरीद सकें।"},
+                {t: "5. बर्निंग मैकेनिज्म", d: "Pi Bridge और यूटिलिटी बिल पेमेंट करने पर हर ट्रांजेक्शन का 1-2% हिस्सा हमेशा के लिए बर्न (नष्ट) हो जाएगा।"}
+            ]
+        };
+        function changeLang(l) {
+            document.getElementById('langSelect').value = l;
+            const data = wp[l] || wp['en'];
+            document.getElementById('content').innerHTML = data.map(i => `<div class="card"><h2 class="text-lg font-bold text-sky-400 mb-2">${i.t}</h2><p class="text-sm text-slate-300">${i.d}</p></div>`).join('');
+        }
+        const lang = new URLSearchParams(window.location.search).get('lang') || 'en';
+        changeLang(lang);
+    </script>
+</body>
+</html>
