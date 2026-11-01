@@ -1,28 +1,32 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const TelegramBot = require('node-telegram-bot-api'); // <-- Telegram Bot Package
+const TelegramBot = require('node-telegram-bot-api');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 // ==========================================
-// CONFIGURATIONS (डेटाबेस और बोट सेटिंग्स)
+// CONFIGURATIONS (सिक्योर Environment Variables)
 // ==========================================
-const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://pncindi:pnc_password@cluster0.mongodb.net/proof-of-mind?retryWrites=true&w=majority";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "pnc_admin_123";
-
-// ⚠️ ध्यान दें: यहाँ अपना असली Bot Token और Vercel URL डालें (अगर Render Env में सेट नहीं है)
-const BOT_TOKEN = process.env.BOT_TOKEN || "यहाँ_अपना_BOT_TOKEN_डालें"; 
+// ⚠️ अब यहाँ कोई असली पासवर्ड या टोकन नहीं है। GitHub कोई एरर नहीं देगा।
+// ये सभी डिटेल्स Render खुद Environment Variables से उठा लेगा।
+const MONGO_URI = process.env.MONGO_URI;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const BOT_TOKEN = process.env.BOT_TOKEN; 
 const WEB_APP_URL = process.env.WEB_APP_URL || "https://proof-of-mind.vercel.app"; 
 
 // ==========================================
 // 1. DATABASE CONNECTION & SCHEMAS
 // ==========================================
-mongoose.connect(MONGO_URI)
-  .then(() => console.log("MongoDB connected successfully"))
-  .catch(err => console.error("MongoDB Error:", err));
+if (MONGO_URI) {
+  mongoose.connect(MONGO_URI)
+    .then(() => console.log("MongoDB connected successfully"))
+    .catch(err => console.error("MongoDB Error:", err));
+} else {
+  console.error("⚠️ MONGO_URI is missing! Please set it in Render Environment Variables.");
+}
 
 const UserSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true },
@@ -62,12 +66,12 @@ const BASE_DICTIONARY = {
 // ==========================================
 // 2. TELEGRAM BOT LOGIC (/start Command)
 // ==========================================
-if (BOT_TOKEN !== "यहाँ_अपना_BOT_TOKEN_डालें") {
+if (BOT_TOKEN) {
     const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 
     bot.onText(/\/start(?: (.+))?/, (msg, match) => {
         const chatId = msg.chat.id;
-        const refCode = match[1] || ""; // Referral ID कैप्चर करना
+        const refCode = match[1] || ""; // Referral ID कैप्चर
 
         const welcomeText = `🧠 Welcome to Proof of Mind (PoM)!\n\nMine tokens, crack words, and join the decentralized Web3 ecosystem. Tap the button below to start!`;
         
@@ -195,15 +199,37 @@ app.get('/api/ad-webhook', async (req, res) => {
     } catch (err) { res.status(500).send("Server Error"); }
 });
 
+app.post('/api/bind-wallet', async (req, res) => {
+  try {
+    await User.findOneAndUpdate({ userId: req.body.userId }, { walletAddress: req.body.address });
+    res.json({ success: true });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.post('/api/confirm-payment', async (req, res) => {
+  try {
+    await User.findOneAndUpdate({ userId: req.body.userId }, { isVerified: true });
+    res.json({ success: true });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
 app.post('/api/admin/stats', async (req, res) => {
     try {
-        if (req.body.password !== ADMIN_PASSWORD) return res.status(401).json({ success: false, message: "Unauthorized" });
+        if (!ADMIN_PASSWORD || req.body.password !== ADMIN_PASSWORD) return res.status(401).json({ success: false, message: "Unauthorized" });
         const totalUsers = await User.countDocuments();
         const verifiedUsers = await User.countDocuments({ isVerified: true });
         const result = await User.aggregate([{ $group: { _id: null, totalMined: { $sum: "$balance" } } }]);
         const totalMined = result.length > 0 ? result[0].totalMined : 0;
         const topLeaders = await User.find().sort({ referralCountL1: -1 }).limit(10).select('username userId platform referralCountL1 balance');
         res.json({ success: true, totalUsers, verifiedUsers, totalMined, topLeaders });
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.post('/api/admin/set-hint', async (req, res) => {
+    try {
+        if (!ADMIN_PASSWORD || req.body.password !== ADMIN_PASSWORD) return res.status(401).json({ success: false, message: "Unauthorized" });
+        await AdminData.findOneAndUpdate({ level: req.body.level, lang: req.body.lang }, { targetWord: req.body.targetWord, hint: req.body.hint }, { upsert: true, new: true });
+        res.json({ success: true, message: "Saved successfully." });
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
