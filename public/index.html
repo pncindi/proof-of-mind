@@ -36,21 +36,48 @@
     </header>
 
     <main class="flex-1 flex flex-col items-center justify-center p-4 relative w-full max-w-md mx-auto z-0" id="gameArea">
-        <div class="w-full flex justify-between items-center mb-6">
+        
+        <div class="w-full flex justify-between items-center mb-4">
             <div id="heartsDisplay" class="flex"></div>
             <div id="hintDisplay" class="text-xs text-amber-400 font-medium italic bg-amber-900/30 px-3 py-1 rounded-full border border-amber-500/30 hidden">
                 Hint: <span id="hintText"></span>
             </div>
         </div>
+
         <div class="text-center mb-4">
             <p class="text-slate-400 text-xs mb-1 uppercase tracking-widest font-bold">Target Word</p>
-            <div id="answerBoxes" class="flex gap-2 justify-center mb-6 h-12"></div>
+            <div id="answerBoxes" class="flex gap-2 justify-center mb-4 h-12"></div>
         </div>
-        <div id="poolArea" class="flex flex-wrap gap-3 justify-center max-w-[280px]"></div>
-        <div class="mt-8 flex gap-4">
+        
+        <div id="poolArea" class="flex flex-wrap gap-3 justify-center max-w-[280px] mb-6"></div>
+
+        <!-- Social Tasks Section (Restored) -->
+        <div class="w-full max-w-[280px] mb-4">
+             <div class="flex flex-col gap-2">
+                 <button onclick="window.open('https://youtube.com/@proofofmind', '_blank')" class="glass-panel text-white px-4 py-2 rounded-xl text-xs font-bold border border-red-500/50 hover:bg-red-500/20 flex items-center justify-between w-full">
+                     <span>📺 Subscribe YouTube</span>
+                     <span class="text-emerald-400">+50 PoM</span>
+                 </button>
+                 <button onclick="window.open('https://x.com/proofofmind', '_blank')" class="glass-panel text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-500/50 hover:bg-slate-500/20 flex items-center justify-between w-full">
+                     <span>🐦 Follow X (Twitter)</span>
+                     <span class="text-emerald-400">+50 PoM</span>
+                 </button>
+                 <button onclick="window.open('https://t.me/proofofmind', '_blank')" class="glass-panel text-white px-4 py-2 rounded-xl text-xs font-bold border border-sky-500/50 hover:bg-sky-500/20 flex items-center justify-between w-full">
+                     <span>✈️ Join Telegram Channel</span>
+                     <span class="text-emerald-400">+50 PoM</span>
+                 </button>
+                 <button onclick="window.open('https://facebook.com/proofofmind', '_blank')" class="glass-panel text-white px-4 py-2 rounded-xl text-xs font-bold border border-blue-500/50 hover:bg-blue-500/20 flex items-center justify-between w-full">
+                     <span>📘 Follow Facebook</span>
+                     <span class="text-emerald-400">+50 PoM</span>
+                 </button>
+             </div>
+        </div>
+
+        <div class="flex gap-4">
             <button onclick="clearAnswer()" class="glass-panel text-slate-300 px-4 py-2 rounded-xl text-xs font-bold border border-slate-700 active:bg-slate-800">Clear</button>
             <button onclick="submitAnswer()" class="bg-gradient-to-r from-sky-500 to-indigo-600 text-white px-8 py-2 rounded-xl text-sm font-bold shadow-lg shadow-sky-500/30 active:scale-95 transition">Verify</button>
         </div>
+        
         <div id="messageAlert" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 glass-panel px-6 py-3 rounded-2xl border hidden text-sm font-bold text-center w-3/4 z-50"></div>
     </main>
 
@@ -75,7 +102,7 @@
             <div class="glass-panel p-4 rounded-2xl border border-slate-700 mb-6">
                 <p class="text-sm text-slate-300 mb-4">Earn 10% from Level 1 and 4% from Level 2 referrals.</p>
                 <div class="bg-black/50 p-3 rounded-lg flex justify-between items-center border border-slate-800">
-                    <span id="refLinkDisplay" class="text-xs text-sky-400 font-mono mr-2">Loading...</span>
+                    <span id="refLinkDisplay" class="text-xs text-sky-400 font-mono mr-2 truncate">Loading...</span>
                     <button onclick="copyRefLink()" class="bg-sky-600/80 px-3 py-1 rounded text-[10px] font-bold">Copy</button>
                 </div>
             </div>
@@ -85,16 +112,16 @@
     <div id="walletTab" class="absolute inset-0 pt-16 pb-20 bg-[#030712] z-30 hidden overflow-y-auto">
         <div class="p-6 max-w-md mx-auto text-center">
             <h2 class="text-xl font-black mb-2">Wallet</h2>
-            <div class="glass-panel p-6 rounded-2xl border border-slate-700 mb-6">
+            <div class="glass-panel p-6 rounded-2xl border border-slate-700 mb-6 flex flex-col items-center">
                 <div class="text-sm font-bold text-slate-300 mb-2">Status: <span id="verificationStatus" class="text-amber-400">Unverified</span></div>
-                <div id="verifyBtnContainer" class="mt-4"></div>
+                <div id="verifyBtnContainer" class="mt-4 w-full flex justify-center"></div>
             </div>
-            <div id="ton-connect-button" class="flex justify-center hidden"></div>
+            <div id="ton-connect-button" class="flex justify-center hidden w-full"></div>
         </div>
     </div>
 
     <script>
-        const API_URL = "https://proof-of-mind-backend.onrender.com"; 
+        const API_URL = "https://proof-of-mind-api.onrender.com"; 
         let userData = { userId: null, username: "Guest", platform: 'TELEGRAM', language: 'en', refCode: null };
         let gameState = { level: 1, balance: 0, hearts: 5, target: "", pool: [], currentAnswer: [], isVerified: false };
         let adController = null;
@@ -164,7 +191,7 @@
                 const res = await fetch(`${API_URL}/api/verify-game`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: userData.userId, answer: answerStr, targetWord: gameState.target }) });
                 const data = await res.json();
                 if(data.success) {
-                    showMessage(`Correct! +${data.earned}`, "border-emerald-500", "text-emerald-400");
+                    showMessage(`Correct! +${data.earned.toFixed(1)}`, "border-emerald-500", "text-emerald-400");
                     gameState.balance = data.newBalance; gameState.level = data.newLevel; gameState.hearts = data.hearts;
                     updateUIBase(); setTimeout(loadGameData, 1500);
                 } else {
@@ -179,21 +206,27 @@
             let html = ""; for(let i=0; i<5; i++) html += i < gameState.hearts ? `❤️` : `🖤`;
             document.getElementById('heartsDisplay').innerHTML = `<div class="tracking-widest text-lg">${html}</div>`;
             
-            document.getElementById('answerBoxes').innerHTML = gameState.target.split('').map((_,i) => `<div class="w-10 h-12 glass-panel rounded-lg flex items-center justify-center text-xl font-bold border ${gameState.currentAnswer[i] ? 'border-sky-400 text-sky-400' : 'border-slate-700'}">${gameState.currentAnswer[i] || ""}</div>`).join('');
+            document.getElementById('answerBoxes').innerHTML = gameState.target.split('').map((_,i) => `<div class="w-10 h-12 glass-panel rounded-lg flex items-center justify-center text-xl font-bold border ${gameState.currentAnswer[i] ? 'border-sky-400 text-sky-400 shadow-sm shadow-sky-400/50' : 'border-slate-700'}">${gameState.currentAnswer[i] || ""}</div>`).join('');
             
             const used = {}; gameState.currentAnswer.forEach(c => used[c] = (used[c] || 0) + 1);
             document.getElementById('poolArea').innerHTML = gameState.pool.map(c => {
-                if(used[c] > 0) { used[c]--; return `<div class="chip w-12 h-12 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-center text-xl font-bold opacity-30 cursor-not-allowed text-white">${c}</div>`; }
-                return `<div onclick="selectChar('${c}')" class="chip w-12 h-12 bg-slate-800 border border-slate-600 rounded-xl flex items-center justify-center text-xl font-bold hover:bg-slate-700 shadow-md text-white">${c}</div>`;
+                if(used[c] > 0) { used[c]--; return `<div class="chip w-10 h-10 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-center text-lg font-bold opacity-30 cursor-not-allowed text-white">${c}</div>`; }
+                return `<div onclick="selectChar('${c}')" class="chip w-10 h-10 bg-slate-800 border border-slate-600 rounded-xl flex items-center justify-center text-lg font-bold hover:bg-slate-700 shadow-md text-white">${c}</div>`;
             }).join('');
         }
 
         function selectChar(char) { if(gameState.currentAnswer.length < gameState.target.length) { gameState.currentAnswer.push(char); renderGameUI(); } }
         function clearAnswer() { gameState.currentAnswer = []; renderGameUI(); }
+        
         function updateUIBase() {
             document.getElementById('levelDisplay').innerText = gameState.level;
             document.getElementById('balanceDisplay').innerText = gameState.balance.toFixed(1);
-            if(gameState.isVerified) { document.getElementById('verificationStatus').innerText = "Verified"; document.getElementById('verificationStatus').className = "text-emerald-400"; document.getElementById('verifyBtnContainer').innerHTML = ""; }
+            if(gameState.isVerified) { 
+                document.getElementById('verificationStatus').innerText = "Verified"; 
+                document.getElementById('verificationStatus').className = "text-emerald-400 font-bold"; 
+                document.getElementById('verifyBtnContainer').innerHTML = ""; 
+                document.getElementById('ton-connect-button').classList.add('hidden');
+            }
         }
 
         async function watchAd() {
